@@ -1,0 +1,122 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Header from '../components/Header.astro'
+---
+
+<Layout
+  title="404 - Página no encontrada | ByteSyncs"
+  description="Oops! La página que buscas se ha derramado o nunca existió."
+>
+  <Header />
+
+  <main
+    class="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-6 py-24 bg-[#F5EFE6] overflow-hidden"
+  >
+    <div
+      class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0"
+    >
+      <span
+        class="text-[40vw] font-bold font-['Playfair_Display'] text-[#2C1E16] leading-none select-none"
+      >
+        404
+      </span>
+    </div>
+
+    <div class="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
+      <div
+        class="relative w-40 h-40 md:w-48 md:h-48 mb-10 group transition-transform duration-300 hover:-translate-y-2"
+      >
+        <div
+          class="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-3 opacity-0 group-hover:opacity-40 transition-opacity duration-500"
+        >
+          <svg
+            class="w-4 h-8 text-[#2C1E16] animate-pulse"
+            style="animation-delay: 0ms;"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"><path d="M18 3c-1.333 3-5.333 5-5.333 8s4 5 2.667 8"></path></svg
+          >
+          <svg
+            class="w-4 h-10 text-[#2C1E16] animate-pulse"
+            style="animation-delay: 300ms;"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"><path d="M6 3c-1.333 3-5.333 5-5.333 8s4 5 2.667 8"></path></svg
+          >
+          <svg
+            class="w-4 h-6 text-[#2C1E16] animate-pulse"
+            style="animation-delay: 600ms;"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"><path d="M12 3c-1.333 3-5.333 5-5.333 8s4 5 2.667 8"></path></svg
+          >
+        </div>
+
+        <svg
+          viewBox="0 0 120 120"
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-full h-full text-[#2E4F3F] drop-shadow-xl"
+        >
+          <path
+            d="M 85 45 C 115 45, 115 80, 85 80"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="12"
+            stroke-linecap="round"></path>
+
+          <path d="M 20 25 L 100 25 L 90 95 C 88 110, 32 110, 30 95 Z" fill="currentColor"></path>
+
+          <ellipse cx="60" cy="25" rx="40" ry="10" fill="#1b2e25"></ellipse>
+          <ellipse cx="60" cy="25" rx="36" ry="7" fill="#8B5A2B"></ellipse>
+
+          <path
+            d="M 45 80 Q 60 70 75 80"
+            fill="none"
+            stroke="#F5EFE6"
+            stroke-width="3"
+            stroke-linecap="round"></path>
+
+          <circle cx="42" cy="58" r="7" fill="#F5EFE6"></circle>
+          <circle cx="42" cy="58" r="3" fill="#111111"></circle>
+          <circle cx="78" cy="58" r="7" fill="#F5EFE6"></circle>
+          <circle cx="78" cy="58" r="3" fill="#111111"></circle>
+        </svg>
+      </div>
+
+      <h1
+        class="text-4xl md:text-5xl font-bold text-[#2C1E16] mb-5 font-['Playfair_Display'] tracking-tight"
+      >
+        ¡Oops! Esta taza está vacía
+      </h1>
+
+      <p
+        class="text-base md:text-lg text-[#2C1E16]/70 mb-10 max-w-lg font-['Inter'] leading-relaxed"
+      >
+        Parece que la página que buscas se ha derramado o nunca existió en nuestro menú. Volvamos al
+        inicio antes de que se enfríe tu café.
+      </p>
+
+      <a
+        href="/"
+        class="group relative inline-flex items-center gap-3 px-8 py-4 bg-[#8B5A2B] text-white text-xs tracking-[0.2em] uppercase font-medium hover:bg-[#2E4F3F] transition-colors duration-300 rounded-sm overflow-hidden"
+      >
+        <span class="relative z-10">Volver al inicio</span>
+        <svg
+          class="relative z-10 w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M5 12h14"></path>
+          <path d="m12 5 7 7-7 7"></path>
+        </svg>
+      </a>
+    </div>
+  </main>
+</Layout>

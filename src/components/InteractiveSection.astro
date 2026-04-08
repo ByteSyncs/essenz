@@ -1,0 +1,229 @@
+---
+import { coffeeQuiz } from '../data/coffeeQuiz'
+import type { CoffeeQuizData } from '../types/coffeeQuiz'
+
+const cq: CoffeeQuizData = coffeeQuiz
+const { steps, results } = cq
+---
+
+<section id="interactivo" class="py-24 bg-[#2E4F3F] text-[#F5EFE6]">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <span
+      class="inline-block text-[#F5EFE6]/50 text-xs tracking-[0.3em] uppercase mb-4 font-medium"
+    >
+      Quiz de Sabor
+    </span>
+    <h2 class="text-4xl md:text-5xl font-bold mb-4">Descubrí tu Café Ideal</h2>
+    <p class="text-[#F5EFE6]/60 mb-12 text-base max-w-md mx-auto">
+      Dos preguntas. Una taza perfecta. Tu próximo favorito te está esperando.
+    </p>
+
+    <div
+      id="quiz-card"
+      class="bg-[#F5EFE6] text-[#2C1E16] shadow-2xl relative overflow-hidden text-left max-w-2xl mx-auto"
+      style="border-radius: 4px;"
+    >
+      <div class="h-1 bg-[#2C1E16]/10 w-full">
+        <div
+          id="progress-bar"
+          class="h-1 bg-[#3f9438] transition-all duration-500 ease-out"
+          style="width: 0%"
+        >
+        </div>
+      </div>
+
+      <div id="step-1" class="p-8 md:p-12">
+        <div class="flex items-center gap-2 mb-8">
+          <span class="text-2xl">{steps[0].emoji}</span>
+          <span class="text-[#2E4F3F] font-bold text-xs tracking-widest uppercase">01 / 02</span>
+        </div>
+        <h3 class="text-2xl md:text-3xl font-bold mb-8 leading-tight">
+          {steps[0].question}
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {
+            steps[0].options.map((opt) => (
+              <button
+                class="quiz-opt flex flex-col gap-1 border border-[#2C1E16]/15 p-5 text-left hover:border-[#2C1E16]/50 hover:bg-[#2C1E16]/5 active:scale-[0.98] transition-all duration-150"
+                data-step="1"
+                data-value={opt.value}
+              >
+                <span class="font-semibold text-[#2C1E16] text-sm">{opt.label}</span>
+                <span class="text-[#2C1E16]/45 text-xs">{opt.sub}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div id="step-2" class="hidden p-8 md:p-12">
+        <div class="flex items-center gap-3 mb-8">
+          <button
+            id="back-btn"
+            class="text-[#2C1E16]/40 hover:text-[#2C1E16] text-xs tracking-widest uppercase transition-colors flex items-center gap-1"
+          >
+            ← Volver
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <span class="text-2xl">{steps[1].emoji}</span>
+            <span class="text-[#2E4F3F] font-bold text-xs tracking-widest uppercase">02 / 02</span>
+          </div>
+        </div>
+        <h3 class="text-2xl md:text-3xl font-bold mb-8 leading-tight">
+          {steps[1].question}
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {
+            steps[1].options.map((opt) => (
+              <button
+                class="quiz-opt flex flex-col gap-1 border border-[#2C1E16]/15 p-5 text-left hover:border-[#2C1E16]/50 hover:bg-[#2C1E16]/5 active:scale-[0.98] transition-all duration-150"
+                data-step="2"
+                data-value={opt.value}
+              >
+                <span class="font-semibold text-[#2C1E16] text-sm">{opt.label}</span>
+                <span class="text-[#2C1E16]/45 text-xs">{opt.sub}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div id="result" class="hidden p-8 md:p-12">
+        <div class="flex items-center justify-between mb-10">
+          <span
+            class="inline-block bg-[#2E4F3F] text-[#F5EFE6] text-xs font-bold tracking-widest uppercase px-3 py-1"
+            style="border-radius:2px;"
+          >
+            Tu match perfecto
+          </span>
+          <button
+            id="reset-btn"
+            class="text-xs text-[#2C1E16]/40 hover:text-[#2C1E16] underline underline-offset-4 transition-colors"
+          >
+            Volver a intentar
+          </button>
+        </div>
+        <span
+          id="result-tag"
+          class="text-[#2E4F3F]/60 text-xs font-semibold tracking-widest uppercase block mb-2"
+        ></span>
+        <h3
+          id="result-title"
+          class="text-3xl md:text-4xl font-bold mb-4 text-[#2C1E16] leading-tight"
+        >
+        </h3>
+        <p id="result-desc" class="text-[#2C1E16]/60 text-base leading-relaxed mb-10 max-w-sm"></p>
+        <div
+          class="border-t border-[#2C1E16]/10 pt-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+        >
+          <p class="text-xs text-[#2C1E16]/40 max-w-55 leading-relaxed">
+            Pedilo en cualquiera de nuestros locales.
+          </p>
+          <a
+            href="/menu"
+            class="inline-flex items-center gap-2 bg-[#2C1E16] text-[#F5EFE6] text-sm font-semibold px-6 py-3 hover:bg-[#2E4F3F] transition-colors"
+            style="border-radius:2px;"
+          >
+            Ver menú completo
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M2 7H12M8 3L12 7L8 11"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <div id="results-data" class="hidden" aria-hidden="true">
+        {
+          Object.entries(results).map(([key, val]) => (
+            <span data-key={key} data-tag={val.tag} data-title={val.title} data-desc={val.desc} />
+          ))
+        }
+      </div>
+    </div>
+
+    <p class="text-[#F5EFE6]/30 text-xs mt-6 tracking-wide">
+      16 combinaciones posibles · Sin algoritmos raros, solo buen café.
+    </p>
+  </div>
+</section>
+
+<script>
+  const getEl = (id: string) => document.getElementById(id) as HTMLElement
+
+  const step1El = getEl('step-1')
+  const step2El = getEl('step-2')
+  const resultEl = getEl('result')
+  const backBtn = getEl('back-btn')
+  const resetBtn = getEl('reset-btn')
+  const progressBar = getEl('progress-bar')
+
+  let prefStep1 = ''
+
+  const resultsMap: Record<string, { tag: string; title: string; desc: string }> = {}
+  document.querySelectorAll<HTMLElement>('#results-data [data-key]').forEach((el) => {
+    const key = el.dataset.key
+    if (key) {
+      resultsMap[key] = {
+        tag: el.dataset.tag || '',
+        title: el.dataset.title || '',
+        desc: el.dataset.desc || '',
+      }
+    }
+  })
+
+  const setProgress = (pct: number) => {
+    if (progressBar) progressBar.style.width = `${pct}%`
+  }
+
+  const updateQuiz = (step: string, value: string) => {
+    if (step === '1') {
+      prefStep1 = value
+      step1El.classList.add('hidden')
+      step2El.classList.remove('hidden')
+      setProgress(50)
+    } else {
+      step2El.classList.add('hidden')
+      showResult(value)
+    }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('.quiz-opt').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const step = btn.dataset.step || ''
+      const value = btn.dataset.value || ''
+      updateQuiz(step, value)
+    })
+  })
+
+  backBtn.addEventListener('click', () => {
+    step2El.classList.add('hidden')
+    step1El.classList.remove('hidden')
+    setProgress(0)
+  })
+
+  resetBtn.addEventListener('click', () => {
+    prefStep1 = ''
+    resultEl.classList.add('hidden')
+    step1El.classList.remove('hidden')
+    setProgress(0)
+  })
+
+  function showResult(prefStep2: string) {
+    const key = `${prefStep1}-${prefStep2}`
+    const data = resultsMap[key]
+
+    if (data) {
+      getEl('result-tag').textContent = data.tag
+      getEl('result-title').textContent = data.title
+      getEl('result-desc').textContent = data.desc
+
+      setProgress(100)
+      resultEl.classList.remove('hidden')
+    }
+  }
+</script>
