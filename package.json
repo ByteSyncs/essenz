@@ -8,11 +8,14 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "npm run build && wrangler dev",
     "astro": "astro",
-    "start": "npm run build && npm run preview"
+    "start": "npm run build && npm run preview",
+    "generate-types": "wrangler types",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^13.1.7",
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.1.4",
     "tailwindcss": "^4.2.2"
@@ -23,6 +26,10 @@
     "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-astro": "^1.6.0",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "wrangler": "^4.81.0"
+  },
+  "overrides": {
+    "vite": "^7"
   }
 }
