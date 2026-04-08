@@ -20,28 +20,27 @@ const clients: Review[] = DATA
     <CoffeeGrid />
     <InteractiveSection />
 
-    <section class="py-20 bg-[#F5EFE6]">
+    <!-- Reviews -->
+    <section class="py-20 bg-(--clr-bg)">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl md:text-4xl font-bold mb-12 text-[#2C1E16]">
+        <h2 class="text-3xl md:text-4xl font-bold mb-12 text-(--clr-ink)">
           Lo que dicen quienes nos eligen
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           {
             clients.map((review) => (
-              <div class="p-8 bg-white shadow-sm border border-[#2C1E16]/5 text-left flex flex-col h-full rounded-2xl">
-                <div class="flex text-[#8B5A2B] mb-6">★★★★★</div>
-
+              <div class="p-8 bg-(--clr-white) shadow-sm border border-(--clr-ink)/5 text-left flex flex-col h-full rounded-2xl">
+                <div class="flex text-(--clr-accent) mb-6">★★★★★</div>
                 <p class="text-gray-600 italic mb-8 grow leading-relaxed">"{review.text}"</p>
-
                 <div class="flex items-center gap-4 border-t border-gray-100 pt-6">
                   <img
                     src={review.image}
                     alt={`Foto de ${review.name}`}
-                    class="w-14 h-14 rounded-full object-cover border-2 border-[#F5EFE6]"
+                    class="w-14 h-14 rounded-full object-cover border-2 border-(--clr-bg)"
                     loading="lazy"
                   />
                   <div>
-                    <h4 class="font-semibold text-[#111111] text-base">{review.name}</h4>
+                    <h4 class="font-semibold text-(--clr-dark) text-base">{review.name}</h4>
                     <p class="text-sm text-gray-500">{review.role}</p>
                   </div>
                 </div>
@@ -52,7 +51,8 @@ const clients: Review[] = DATA
       </div>
     </section>
 
-    <section id="contacto" class="py-20 bg-[#111111] text-white">
+    <!-- Contacto -->
+    <section id="contacto" class="py-20 bg-(--clr-dark) text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div>
@@ -64,7 +64,7 @@ const clients: Review[] = DATA
             <div class="space-y-6">
               <div class="flex items-start gap-4 group">
                 <span
-                  class="p-3 bg-[#2E4F3F]/20 text-[#2E4F3F] rounded-full shrink-0 transition-colors group-hover:bg-[#2E4F3F] group-hover:text-white"
+                  class="p-3 bg-(--clr-green)/20 text-(--clr-green) rounded-full shrink-0 transition-colors group-hover:bg-(--clr-green) group-hover:text-white"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -76,11 +76,10 @@ const clients: Review[] = DATA
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    ><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle
-                      cx="12"
-                      cy="10"
-                      r="3"></circle></svg
                   >
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
                 </span>
                 <div>
                   <p class="font-medium">Av. Entre Ríos, C1033</p>
@@ -90,7 +89,7 @@ const clients: Review[] = DATA
 
               <div class="flex items-center gap-4 group">
                 <span
-                  class="p-3 bg-[#8B5A2B]/20 text-[#8B5A2B] rounded-full shrink-0 transition-colors group-hover:bg-[#8B5A2B] group-hover:text-white"
+                  class="p-3 bg-(--clr-accent)/20 text-(--clr-accent) rounded-full shrink-0 transition-colors group-hover:bg-(--clr-accent) group-hover:text-white"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -102,19 +101,20 @@ const clients: Review[] = DATA
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    ><path
-                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-                    ></path></svg
                   >
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                    ></path>
+                  </svg>
                 </span>
-                <p class="font-medium group-hover:text-[#8B5A2B] transition-colors">
+                <p class="font-medium group-hover:text-(--clr-accent) transition-colors">
                   +54 9 11 1234-5678
                 </p>
               </div>
 
               <div class="flex items-center gap-4 group">
                 <span
-                  class="p-3 bg-[#2E4F3F]/20 text-[#2E4F3F] rounded-full shrink-0 transition-colors group-hover:bg-[#2E4F3F] group-hover:text-white"
+                  class="p-3 bg-(--clr-green)/20 text-(--clr-green) rounded-full shrink-0 transition-colors group-hover:bg-(--clr-green) group-hover:text-white"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -126,18 +126,19 @@ const clients: Review[] = DATA
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    ><rect width="20" height="16" x="2" y="4" rx="2"></rect><path
-                      d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg
                   >
+                    <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                  </svg>
                 </span>
-                <p class="font-medium group-hover:text-[#2E4F3F] transition-colors">
+                <p class="font-medium group-hover:text-(--clr-green) transition-colors">
                   contact@demo.com
                 </p>
               </div>
 
               <div class="flex items-center gap-4 group">
                 <span
-                  class="p-3 bg-[#8B5A2B]/20 text-[#8B5A2B] rounded-full shrink-0 transition-colors group-hover:bg-[#8B5A2B] group-hover:text-white"
+                  class="p-3 bg-(--clr-accent)/20 text-(--clr-accent) rounded-full shrink-0 transition-colors group-hover:bg-(--clr-accent) group-hover:text-white"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -149,15 +150,13 @@ const clients: Review[] = DATA
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    ><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path
-                      d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line
-                      x1="17.5"
-                      y1="6.5"
-                      x2="17.51"
-                      y2="6.5"></line></svg
                   >
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                  </svg>
                 </span>
-                <p class="font-medium group-hover:text-[#8B5A2B] transition-colors">
+                <p class="font-medium group-hover:text-(--clr-accent) transition-colors">
                   @bytesyncs.demo
                 </p>
               </div>
@@ -165,29 +164,26 @@ const clients: Review[] = DATA
           </div>
 
           <div
-            class="relative w-full h-80 overflow-hidden border border-[#2C1E16]/10 shadow-inner group"
+            class="relative w-full h-80 overflow-hidden border border-(--clr-ink)/10 shadow-inner group"
           >
             <div
-              class="absolute inset-0 z-10 pointer-events-none border border-transparent group-hover:border-[#2E4F3F]/20 transition-colors duration-500"
+              class="absolute inset-0 z-10 pointer-events-none border border-transparent group-hover:border-(--clr-green)/20 transition-colors duration-500"
             >
             </div>
-
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4100.444694626743!2d-58.39518102337317!3d-34.60981635782192!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bccac2cd859503%3A0x75cdafaaef2b946!2sCongreso%20de%20la%20Naci%C3%B3n%20Argentina!5e1!3m2!1sen!2sar!4v1775591879044!5m2!1sen!2sar"
               class="w-full h-full contrast-110 sepia-[.2] transition-all duration-700 ease-in-out group-hover:grayscale-0 group-hover:contrast-100 group-hover:sepia-0"
               style="border:0;"
               allowfullscreen=""
               loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"
-            >
-            </iframe>
+              referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="bg-[#0a0a0a] border-t border-white/10 text-gray-500 py-8 text-center text-sm">
+  <footer class="bg-(--clr-darker) border-t border-white/10 text-gray-500 py-8 text-center text-sm">
     <div
       class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4"
     >

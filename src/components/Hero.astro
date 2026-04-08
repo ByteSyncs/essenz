@@ -1,11 +1,11 @@
 <section
   id="inicio"
-  class="relative min-h-dvh w-full flex items-center overflow-hidden bg-[#faf6ef]"
+  class="relative min-h-dvh w-full flex items-center overflow-hidden bg-(--clr-bg)"
 >
   <canvas id="hero-canvas" class="absolute inset-0 w-full h-full z-0"></canvas>
 
   <div
-    class="absolute inset-0 z-1 pointer-events-none bg-[radial-gradient(ellipse_70%_80%_at_60%_50%,transparent_30%,rgba(250,246,239,0.6)_100%)]"
+    class="absolute inset-0 z-1 pointer-events-none bg-[radial-gradient(ellipse_70%_80%_at_60%_50%,transparent_30%,color-mix(in_srgb,--clr-bg_60%,transparent)_100%)]"
   >
   </div>
 
@@ -23,25 +23,26 @@
         <path
           class="steam-float opacity-0 animate-[steamFloat_3s_ease-in-out_infinite_2s]"
           d="M20 60 Q30 40 20 20 Q10 0 20 -20"
-          stroke="#8B5A2B"
+          stroke="var(--clr-accent)"
           stroke-width="2.5"
           stroke-linecap="round"
           fill="none"></path>
         <path
           class="steam-float opacity-0 animate-[steamFloat_3.5s_ease-in-out_infinite_2.4s]"
           d="M50 60 Q60 35 50 15 Q40 -5 50 -25"
-          stroke="#8B5A2B"
+          stroke="var(--clr-accent)"
           stroke-width="2"
           stroke-linecap="round"
           fill="none"></path>
         <path
           class="steam-float opacity-0 animate-[steamFloat_2.8s_ease-in-out_infinite_2.8s]"
           d="M80 60 Q90 42 80 22 Q70 2 80 -18"
-          stroke="#8B5A2B"
+          stroke="var(--clr-accent)"
           stroke-width="2.5"
           stroke-linecap="round"
           fill="none"></path>
       </g>
+      <!-- Cup illustration — colores internos de la ilustración, no son del tema -->
       <ellipse cx="240" cy="440" rx="165" ry="22" fill="#D4B896" opacity="0.6"></ellipse>
       <ellipse cx="240" cy="436" rx="155" ry="16" fill="#C8A882"></ellipse>
       <ellipse cx="240" cy="432" rx="145" ry="10" fill="#B89060"></ellipse>
@@ -70,33 +71,35 @@
   <div class="relative z-10 w-full max-w-350 mx-auto px-6 md:px-12 pt-32 pb-24">
     <div class="max-w-140 opacity-0 animate-[fadeUp_0.9s_ease_0.1s_forwards]">
       <span
-        class="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] uppercase text-[#2e4f3f] mb-6 before:content-[''] before:w-6 before:h-px before:bg-[#2e4f3f]"
+        class="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.18em] uppercase text-(--clr-green) mb-6 before:content-[''] before:w-6 before:h-px before:bg-(--clr-green)"
       >
         Experiencia de Autor
       </span>
 
       <h1
-        class="font-serif text-5xl md:text-6xl lg:text-8xl font-bold leading-[1.05] text-[#2c1e16] mb-6 tracking-tight"
+        class="font-serif text-5xl md:text-6xl lg:text-8xl font-bold leading-[1.05] text-(--clr-ink) mb-6 tracking-tight"
       >
         El arte del café,
-        <em class="block italic text-[#8b5a2b]">perfeccionado.</em>
+        <em class="block italic text-(--clr-accent)">perfeccionado.</em>
       </h1>
 
-      <p class="text-base md:text-lg leading-relaxed text-[#6b5e4e] mb-10 max-w-110 font-light">
+      <p
+        class="text-base md:text-lg leading-relaxed text-(--clr-ink)/70 mb-10 max-w-110 font-light"
+      >
         Descubre nuestra selección de granos de especialidad. Tostados con precisión, preparados con
         pasión. Un viaje sensorial en cada taza.
       </p>
 
       <div class="flex flex-wrap gap-3 opacity-0 animate-[fadeUp_0.9s_ease_0.4s_both]">
         <a
-          href="/carta"
-          class="px-8 py-3.5 bg-[#2c1e16] text-white text-[13px] font-medium tracking-wider uppercase transition-all hover:bg-black hover:-translate-y-0.5"
+          href="/menu"
+          class="px-8 py-3.5 bg-(--clr-ink) text-(--clr-white) text-[13px] font-medium tracking-wider uppercase transition-all hover:bg-(--clr-darker) hover:-translate-y-0.5"
         >
           Explorar Catálogo
         </a>
         <a
           href="#contacto"
-          class="px-8 py-3.5 border border-[#2c1e16] text-[#2c1e16] text-[13px] font-medium tracking-wider uppercase transition-all hover:bg-[#2c1e16] hover:text-white hover:-translate-y-0.5"
+          class="px-8 py-3.5 border border-(--clr-ink) text-(--clr-ink) text-[13px] font-medium tracking-wider uppercase transition-all hover:bg-(--clr-ink) hover:text-(--clr-white) hover:-translate-y-0.5"
         >
           Visítanos
         </a>
@@ -107,9 +110,11 @@
   <div
     class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 opacity-0 animate-[fadeUp_0.9s_ease_1.5s_forwards]"
   >
-    <span class="text-[10px] tracking-[0.15em] uppercase text-[#8b5a2b] font-medium">Scroll</span>
+    <span class="text-[10px] tracking-[0.15em] uppercase text-(--clr-accent) font-medium"
+      >Scroll</span
+    >
     <div
-      class="w-px h-10 bg-linear-to-b from-[#8b5a2b] to-transparent animate-[scrollPulse_2s_ease-in-out_infinite]"
+      class="w-px h-10 bg-linear-to-b from-(--clr-accent) to-transparent animate-[scrollPulse_2s_ease-in-out_infinite]"
     >
     </div>
   </div>
@@ -184,11 +189,26 @@
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Read colors from CSS variables at runtime
+    const style = getComputedStyle(document.documentElement)
+    const accent = style.getPropertyValue('--clr-accent').trim()
+    const green = style.getPropertyValue('--clr-green').trim()
+    const ink = style.getPropertyValue('--clr-ink').trim()
+
     let width: number, height: number
     let particles: Particle[] = []
     const mouse = { x: -999, y: -999 }
 
-    const COLORS = ['rgba(139,90,43,', 'rgba(46,79,63,', 'rgba(212,197,169,', 'rgba(44,30,22,']
+    // Convert hex to rgba helper
+    function hexToRgba(hex: string, a: number) {
+      const h = hex.replace('#', '')
+      const r = parseInt(h.slice(0, 2), 16)
+      const g = parseInt(h.slice(2, 4), 16)
+      const b = parseInt(h.slice(4, 6), 16)
+      return `rgba(${r},${g},${b},${a})`
+    }
+
+    const COLORS = [accent, green, ink]
 
     const resize = () => {
       width = canvas.width = canvas.offsetWidth
@@ -209,7 +229,6 @@
 
     const loop = () => {
       ctx.clearRect(0, 0, width, height)
-
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const a = particles[i],
@@ -221,17 +240,15 @@
             ctx.beginPath()
             ctx.moveTo(a.x, a.y)
             ctx.lineTo(b.x, b.y)
-            ctx.strokeStyle = `rgba(139,90,43,${(1 - dist / 80) * 0.12})`
+            ctx.strokeStyle = hexToRgba(accent, (1 - dist / 80) * 0.12)
             ctx.lineWidth = 0.6
             ctx.stroke()
           }
         }
       }
-
       particles.forEach((p) => {
         p.wobble += p.wobbleSpeed
         p.vx += Math.sin(p.wobble) * 0.008
-
         const dx = p.x - mouse.x,
           dy = p.y - mouse.y
         const dist = Math.sqrt(dx * dx + dy * dy)
@@ -240,17 +257,14 @@
           p.vx += (dx / dist) * force * 0.06
           p.vy += (dy / dist) * force * 0.06
         }
-
         p.x += p.vx *= 0.99
         p.y += p.vy *= 0.99
-
         if (p.x < -10) p.x = width + 10
         if (p.x > width + 10) p.x = -10
         if (p.y < -10) p.y = height + 10
-
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
-        ctx.fillStyle = `${p.color}${p.opacity})`
+        ctx.fillStyle = hexToRgba(p.color, p.opacity)
         ctx.fill()
       })
       requestAnimationFrame(loop)
@@ -265,7 +279,6 @@
       mouse.x = e.clientX - r.left
       mouse.y = e.clientY - r.top
     })
-
     resize()
     particles = Array.from({ length: 80 }, createParticle)
     loop()

@@ -1,0 +1,401 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Header from '../components/Header.astro'
+import { CARTA_MENU } from '../data/menu'
+
+const categories = CARTA_MENU
+
+const defaultImage =
+  'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=600&q=80'
+---
+
+<Layout
+  title="Menú | ByteSyncs Café"
+  description="Fichas técnicas de nuestra selección de especialidad."
+>
+  <Header />
+
+  <main
+    class="pt-32 pb-20 bg-(--clr-bg) relative bg-[radial-gradient(color-mix(in_srgb,var(--clr-ink)_7%,transparent)_1px,transparent_1px)] bg-size-[40px_40px] min-h-screen"
+  >
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div
+        class="relative py-16 mb-12 mt-[5%] text-center border-y border-(--clr-ink)/10 bg-(--clr-white)/40 rounded-3xl backdrop-blur-sm shadow-sm overflow-hidden"
+      >
+        <h1
+          class="text-6xl md:text-9xl font-black text-(--clr-ink) uppercase tracking-tighter opacity-5 absolute inset-0 flex items-center justify-center select-none"
+        >
+          MENU
+        </h1>
+        <div class="relative z-10">
+          <span
+            class="inline-block bg-(--clr-green)/10 text-(--clr-green) px-4 py-1.5 rounded-full font-bold tracking-[0.2em] uppercase text-xs mb-4"
+          >
+            ByteSyncs Experience
+          </span>
+          <h2 class="text-4xl md:text-6xl font-bold text-(--clr-ink) italic drop-shadow-sm">
+            Selección de Autor
+          </h2>
+        </div>
+      </div>
+
+      <div class="mb-16 max-w-2xl mx-auto">
+        <div class="relative group">
+          <svg
+            class="absolute left-6 top-1/2 -translate-y-1/2 text-(--clr-ink)/40 group-focus-within:text-(--clr-green) transition-colors pointer-events-none"
+            width="20"
+            height="20"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="2"></circle>
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            ></path>
+          </svg>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Buscá por nombre, nota o categoría…"
+            class="w-full bg-(--clr-white) border-2 border-(--clr-ink)/10 rounded-full pl-14 pr-12 py-4 text-base text-(--clr-ink) placeholder:text-(--clr-ink)/40 outline-none focus:border-(--clr-green) focus:ring-4 focus:ring-(--clr-green)/10 transition-all shadow-sm hover:shadow-md"
+          />
+          <button
+            id="clear-search"
+            class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 items-center justify-center bg-(--clr-ink)/5 rounded-full text-(--clr-ink)/40 hover:text-(--clr-ink) hover:bg-(--clr-ink)/10 transition-all hidden"
+            aria-label="Limpiar búsqueda"
+          >
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M1 1L13 13M13 1L1 13"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"></path>
+            </svg>
+          </button>
+        </div>
+        <p
+          id="search-empty"
+          class="hidden text-center text-base text-(--clr-ink)/60 mt-6 bg-(--clr-white)/50 py-4 rounded-2xl"
+        >
+          No encontramos nada jugoso para
+          <span id="search-term" class="font-bold text-(--clr-ink) italic"></span> 🧐
+        </p>
+      </div>
+
+      <div class="space-y-20" id="menu-container">
+        {
+          categories.map((cat) => (
+            <section id={cat.id} data-section>
+              <div class="flex items-center gap-6 mb-10">
+                <h3 class="text-3xl font-bold text-(--clr-ink) whitespace-nowrap bg-(--clr-bg) pr-4">
+                  {cat.title}
+                </h3>
+                <div class="h-0.5 bg-linear-to-r from-(--clr-ink)/20 to-transparent w-full rounded-full" />
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {cat.items.map((item) => (
+                  <div
+                    class="menu-item bg-(--clr-white) rounded-3xl flex flex-col overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer group border border-(--clr-ink)/5"
+                    data-nombre={item.name.toLowerCase()}
+                    data-notas={(item.details?.notes ?? []).join(' ').toLowerCase()}
+                    data-categoria={cat.title.toLowerCase()}
+                    data-details={JSON.stringify({ ...item, image: item.image || defaultImage })}
+                  >
+                    <div class="relative h-56 overflow-hidden bg-(--clr-ink)/5">
+                      <img
+                        src={item.image || defaultImage}
+                        alt={item.name}
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                      <div class="absolute inset-0 bg-linear-to-t from-(--clr-ink-dark)/80 via-transparent to-transparent opacity-60" />
+                      <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                        <h4 class="text-2xl font-bold text-(--clr-white) drop-shadow-md">
+                          {item.name}
+                        </h4>
+                        <span class="bg-(--clr-white) text-(--clr-ink) font-bold px-3 py-1 rounded-xl text-sm shadow-lg whitespace-nowrap">
+                          {item.price}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="p-6 flex-1 flex flex-col">
+                      <p class="text-(--clr-ink)/60 text-sm leading-relaxed mb-6 flex-1">
+                        {item.description}
+                      </p>
+
+                      <div class="pt-4 border-t border-(--clr-ink)/5 flex justify-between items-center mt-auto">
+                        {item.intensity ? (
+                          <div
+                            class="flex gap-1 items-center"
+                            title={`Intensidad: ${item.intensity}/5`}
+                          >
+                            {[...Array(5)].map((_, i) => (
+                              <div
+                                class={`w-2 h-2 rounded-full ${i < item.intensity! ? 'bg-(--clr-accent)' : 'bg-(--clr-ink)/10'}`}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div />
+                        )}
+
+                        <span class="text-[11px] font-bold uppercase tracking-widest text-(--clr-green) bg-(--clr-green)/5 px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
+                          Ver detalles &rarr;
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
+        }
+      </div>
+
+      <div id="search-results" class="hidden">
+        <div class="flex items-center gap-6 mb-10">
+          <h3 class="text-3xl font-bold text-(--clr-ink) whitespace-nowrap bg-(--clr-bg) pr-4">
+            Resultados
+          </h3>
+          <div class="h-0.5 bg-linear-to-r from-(--clr-ink)/20 to-transparent w-full rounded-full">
+          </div>
+        </div>
+        <div id="search-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+      </div>
+    </div>
+  </main>
+
+  <dialog
+    id="item-modal"
+    class="p-0 rounded-3xl border-none bg-(--clr-bg) max-w-md w-[90%] sm:w-full backdrop:bg-(--clr-ink)/60 backdrop:backdrop-blur-md shadow-2xl overflow-hidden"
+    style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); margin:0;"
+  >
+    <div class="relative flex flex-col max-h-[90vh]">
+      <div id="modal-image-container" class="relative h-64 w-full shrink-0">
+        <button
+          id="close-modal"
+          class="absolute top-4 right-4 bg-(--clr-white)/20 backdrop-blur-md text-(--clr-white) w-10 h-10 rounded-full flex items-center justify-center hover:bg-(--clr-white) hover:text-(--clr-ink) hover:rotate-90 transition-all z-20"
+          aria-label="Cerrar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div
+          class="absolute inset-0 bg-linear-to-t from-(--clr-bg) via-transparent to-transparent z-10"
+        >
+        </div>
+      </div>
+
+      <div id="modal-content" class="p-8 pt-2 overflow-y-auto relative z-20 custom-scrollbar"></div>
+    </div>
+  </dialog>
+</Layout>
+
+<script>
+  const modal = document.querySelector('#item-modal') as HTMLDialogElement
+  const closeModalBtn = document.querySelector('#close-modal')
+  const modalContent = document.querySelector('#modal-content')
+  const modalImageContainer = document.querySelector('#modal-image-container')
+
+  function buildModalHTML(data: any) {
+    const notes = (data.details?.notes ?? [])
+      .map(
+        (note: string) =>
+          `<span class="bg-(--clr-ink)/5 text-(--clr-ink) px-3 py-1 rounded-lg text-xs font-medium">#${note}</span>`,
+      )
+      .join('')
+
+    return `
+      <div class="-mt-8 relative mb-6">
+        <span class="inline-block bg-(--clr-green) text-(--clr-white) px-3 py-1 rounded-lg font-bold tracking-[0.2em] uppercase text-[10px] mb-3 shadow-md">
+          Ficha Técnica
+        </span>
+        <h3 class="text-4xl font-bold text-(--clr-ink) italic drop-shadow-sm">${data.name}</h3>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-sm bg-(--clr-white) p-6 rounded-3xl shadow-sm border border-(--clr-ink)/5">
+        <div>
+          <p class="text-(--clr-ink)/40 uppercase text-[10px] font-bold mb-1 tracking-wider">Cuerpo / Gramaje</p>
+          <p class="text-(--clr-ink) font-semibold">${data.details?.grams ?? 'Estándar'}</p>
+        </div>
+        <div>
+          <p class="text-(--clr-ink)/40 uppercase text-[10px] font-bold mb-1 tracking-wider">Nivel de Amargor</p>
+          <p class="text-(--clr-ink) font-semibold">${data.details?.bitterness ?? 'N/A'}</p>
+        </div>
+        <div class="col-span-2">
+          <p class="text-(--clr-ink)/40 uppercase text-[10px] font-bold mb-2 tracking-wider">Perfil de Sabor</p>
+          <div class="flex gap-2 flex-wrap">${notes}</div>
+        </div>
+        <div>
+          <p class="text-(--clr-ink)/40 uppercase text-[10px] font-bold mb-1 tracking-wider">Azúcares</p>
+          <p class="text-(--clr-ink) font-semibold">${data.details?.sugar ?? '0g'}</p>
+        </div>
+        <div>
+          <p class="text-(--clr-ink)/40 uppercase text-[10px] font-bold mb-1 tracking-wider">Precio Final</p>
+          <p class="text-(--clr-accent) font-black text-xl">${data.price}</p>
+        </div>
+      </div>
+    `
+  }
+
+  function openModal(data: any) {
+    if (modalContent) modalContent.innerHTML = buildModalHTML(data)
+
+    if (modalImageContainer) {
+      const existingImg = modalImageContainer.querySelector('img')
+      if (existingImg) existingImg.remove()
+
+      const img = document.createElement('img')
+      img.src = data.image
+      img.alt = data.name
+      img.className = 'w-full h-full object-cover absolute inset-0 -z-10'
+      modalImageContainer.appendChild(img)
+    }
+
+    modal.showModal()
+  }
+
+  closeModalBtn?.addEventListener('click', () => modal.close())
+
+  modal.addEventListener('click', (e) => {
+    const r = modal.getBoundingClientRect()
+    const ev = e as MouseEvent
+    if (
+      ev.clientX < r.left ||
+      ev.clientX > r.right ||
+      ev.clientY < r.top ||
+      ev.clientY > r.bottom
+    ) {
+      modal.close()
+    }
+  })
+
+  const observer = new MutationObserver(() => {
+    if (modal.open) {
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+  })
+  observer.observe(modal, { attributes: true, attributeFilter: ['open'] })
+
+  function attachModalToItems(items: NodeListOf<Element> | Element[]) {
+    items.forEach((item) => {
+      item.addEventListener('click', () => {
+        const data = JSON.parse((item as HTMLElement).getAttribute('data-details') || '{}')
+        openModal(data)
+      })
+    })
+  }
+
+  attachModalToItems(document.querySelectorAll('.menu-item'))
+
+  const searchInput = document.getElementById('search-input') as HTMLInputElement
+  const clearBtn = document.getElementById('clear-search')!
+  const searchEmpty = document.getElementById('search-empty')!
+  const searchTerm = document.getElementById('search-term')!
+  const menuContainer = document.getElementById('menu-container')!
+  const searchResults = document.getElementById('search-results')!
+  const searchGrid = document.getElementById('search-grid')!
+
+  const allItems: HTMLElement[] = Array.from(document.querySelectorAll('.menu-item')).map(
+    (el) => el.cloneNode(true) as HTMLElement,
+  )
+
+  function buildCard(item: HTMLElement): HTMLElement {
+    const clone = item.cloneNode(true) as HTMLElement
+    clone.addEventListener('click', () => {
+      const data = JSON.parse(clone.getAttribute('data-details') || '{}')
+      openModal(data)
+    })
+    return clone
+  }
+
+  function runSearch(query: string) {
+    const q = query.trim().toLowerCase()
+    clearBtn.classList.toggle('hidden', q === '')
+
+    if (q === '') {
+      menuContainer.classList.remove('hidden')
+      searchResults.classList.add('hidden')
+      searchEmpty.classList.add('hidden')
+      return
+    }
+
+    menuContainer.classList.add('hidden')
+    searchResults.classList.remove('hidden')
+
+    const matches = allItems.filter((item) => {
+      const nombre = item.dataset.nombre ?? ''
+      const notas = item.dataset.notas ?? ''
+      const categoria = item.dataset.categoria ?? ''
+      return nombre.includes(q) || notas.includes(q) || categoria.includes(q)
+    })
+
+    searchGrid.innerHTML = ''
+    searchTerm.textContent = `"${query.trim()}"`
+
+    if (matches.length === 0) {
+      searchEmpty.classList.remove('hidden')
+    } else {
+      searchEmpty.classList.add('hidden')
+      matches.forEach((item) => searchGrid.appendChild(buildCard(item)))
+    }
+  }
+
+  let debounceTimer: ReturnType<typeof setTimeout>
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => runSearch(searchInput.value), 200)
+  })
+
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = ''
+    runSearch('')
+    searchInput.focus()
+  })
+</script>
+
+<style>
+  dialog[open] {
+    animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes scaleUp {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -40%) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--clr-ink);
+    border-radius: 10px;
+    opacity: 0.2;
+  }
+</style>

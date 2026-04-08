@@ -1,20 +1,22 @@
-<header id="main-header" class="fixed w-full z-50 bg-[#F7F1E8] transition-all duration-300">
+<header id="main-header" class="fixed w-full z-50 bg-(--clr-bg) transition-all duration-300">
   <div
     id="top-strip"
-    class="bg-[#1A120B] text-[#F7F1E8] overflow-hidden transition-all duration-400 h-8.5"
+    class="bg-(--clr-ink-dark) text-(--clr-bg) overflow-hidden transition-all duration-400 h-8.5"
   >
     <div class="max-w-7xl mx-auto px-8 h-full flex justify-between items-center">
       <div
-        class="flex gap-6 text-[10.5px] tracking-widest uppercase text-[#F7F1E8]/60 whitespace-nowrap font-['DM_Sans',system-ui,sans-serif]"
+        class="flex gap-6 text-[10.5px] tracking-widest uppercase text-(--clr-bg)/60 whitespace-nowrap font-['DM_Sans',system-ui,sans-serif]"
       >
         <span class="flex items-center gap-1.5">
           <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-            <circle cx="6" cy="6" r="5" stroke="rgba(247,241,232,0.5)" stroke-width="1"></circle>
+            <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1" opacity="0.5"
+            ></circle>
             <path
               d="M6 3v3l2 1.5"
-              stroke="rgba(247,241,232,0.5)"
+              stroke="currentColor"
               stroke-width="1"
-              stroke-linecap="round"></path>
+              stroke-linecap="round"
+              opacity="0.5"></path>
           </svg>
           Lun–Vie 7:00–21:00
         </span>
@@ -24,27 +26,27 @@
       <div
         class="flex gap-5 items-center text-[10.5px] tracking-widest uppercase font-['DM_Sans',system-ui,sans-serif]"
       >
-        <span class="w-px h-3 bg-[#F7F1E8]/20"></span>
+        <span class="w-px h-3 bg-(--clr-bg)/20"></span>
         <a
           href="tel:+541140000000"
-          class="text-[#F7F1E8]/60 hover:text-[#D4AF7A] transition-colors no-underline hidden sm:inline"
+          class="text-(--clr-bg)/60 hover:text-(--clr-accent-light) transition-colors no-underline hidden sm:inline"
           >+54 9 11 1234-5678</a
         >
       </div>
     </div>
   </div>
 
-  <div class="h-0.75 bg-[#2E4F3F]"></div>
+  <div class="h-0.75 bg-(--clr-green)"></div>
 
   <div class="max-w-7xl mx-auto px-8 py-4.5 pb-3.5 flex justify-between items-center gap-6">
     <a href="/" class="flex flex-col items-start gap-0.5 no-underline group shrink-0">
       <span
-        class="text-[8.5px] tracking-[0.22em] uppercase text-[#4b3c25] font-medium font-['DM_Sans',system-ui,sans-serif]"
+        class="text-[8.5px] tracking-[0.22em] uppercase text-(--clr-ink)/60 font-medium font-['DM_Sans',system-ui,sans-serif]"
       >
         Est. 2024 · Buenos Aires
       </span>
       <span
-        class="text-[28px] font-bold text-[#1A120B] leading-none tracking-tight flex items-center gap-2.5 group-hover:opacity-80 transition-opacity font-['Playfair_Display',Georgia,serif]"
+        class="text-[28px] font-bold text-(--clr-ink-dark) leading-none tracking-tight flex items-center gap-2.5 group-hover:opacity-80 transition-opacity font-['Playfair_Display',Georgia,serif]"
       >
         <svg
           width="28"
@@ -54,73 +56,76 @@
           xmlns="http://www.w3.org/2000/svg"
           class="relative top-px shrink-0"
         >
-          <path d="M20,40 C20,25 80,25 80,40 L75,75 C75,85 25,85 25,75 Z" fill="#2E4F3F"></path>
+          <path d="M20,40 C20,25 80,25 80,40 L75,75 C75,85 25,85 25,75 Z" fill="var(--clr-green)"
+          ></path>
           <path
             d="M78,45 C88,45 88,65 78,65 L76,65"
-            stroke="#2E4F3F"
+            stroke="var(--clr-green)"
             stroke-width="6"
             stroke-linecap="round"></path>
           <path
             d="M35,25 C35,15 45,15 45,5"
-            stroke="#B08D57"
+            stroke="var(--clr-accent-light)"
             stroke-width="5"
             stroke-linecap="round"
             opacity="0.9"></path>
           <path
             d="M50,25 C50,10 60,10 60,0"
-            stroke="#B08D57"
+            stroke="var(--clr-accent-light)"
             stroke-width="5"
             stroke-linecap="round"
             opacity="0.7"></path>
           <path
             d="M65,25 C65,18 72,18 72,10"
-            stroke="#B08D57"
+            stroke="var(--clr-accent-light)"
             stroke-width="5"
             stroke-linecap="round"
             opacity="0.5"></path>
         </svg>
         ByteSyncs
       </span>
-      <span class="text-[12px] italic text-[#1A120B]/60 font-['Cormorant_Garamond',Georgia,serif]">
+      <span
+        class="text-[12px] italic text-(--clr-ink-dark)/60 font-['Cormorant_Garamond',Georgia,serif]"
+      >
         Café de especialidad &amp; experiencias
       </span>
     </a>
 
     <div class="hidden lg:flex flex-col items-center gap-1.5 flex-1 max-w-70">
-      <div class="w-full h-px bg-linear-to-r from-transparent via-[#1A120B]/15 to-transparent">
+      <div class="w-full h-px bg-linear-to-r from-transparent via-(--clr-ink)/15 to-transparent">
       </div>
       <span
-        class="text-[9px] tracking-[0.3em] uppercase text-[#1A120B]/60 whitespace-nowrap font-['Cormorant_Garamond',Georgia,serif]"
+        class="text-[9px] tracking-[0.3em] uppercase text-(--clr-ink-dark)/60 whitespace-nowrap font-['Cormorant_Garamond',Georgia,serif]"
       >
         desde el grano hasta la taza
       </span>
-      <div class="w-full h-px bg-linear-to-r from-transparent via-[#1A120B]/15 to-transparent">
+      <div class="w-full h-px bg-linear-to-r from-transparent via-(--clr-ink)/15 to-transparent">
       </div>
     </div>
 
     <nav class="hidden md:flex items-center gap-8">
       <a
         href="/#inicio"
-        class="relative text-[11.5px] tracking-[0.12em] uppercase text-[#1A120B]/60 no-underline font-normal transition-colors duration-200 hover:text-[#1A120B] font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-[#B08D57] after:transition-[width] after:duration-300 hover:after:w-full"
+        class="relative text-[11.5px] tracking-[0.12em] uppercase text-(--clr-ink-dark)/60 no-underline font-normal transition-colors duration-200 hover:text-(--clr-ink-dark) font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-(--clr-accent-light) after:transition-[width] after:duration-300 hover:after:w-full"
         >Inicio</a
       >
       <a
         href="/#variedades"
-        class="relative text-[11.5px] tracking-[0.12em] uppercase text-[#1A120B]/60 no-underline font-normal transition-colors duration-200 hover:text-[#1A120B] font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-[#B08D57] after:transition-[width] after:duration-300 hover:after:w-full"
+        class="relative text-[11.5px] tracking-[0.12em] uppercase text-(--clr-ink-dark)/60 no-underline font-normal transition-colors duration-200 hover:text-(--clr-ink-dark) font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-(--clr-accent-light) after:transition-[width] after:duration-300 hover:after:w-full"
         >Variedades</a
       >
       <a
         href="/#contacto"
-        class="relative text-[11.5px] tracking-[0.12em] uppercase text-[#1A120B]/60 no-underline font-normal transition-colors duration-200 hover:text-[#1A120B] font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-[#B08D57] after:transition-[width] after:duration-300 hover:after:w-full"
+        class="relative text-[11.5px] tracking-[0.12em] uppercase text-(--clr-ink-dark)/60 no-underline font-normal transition-colors duration-200 hover:text-(--clr-ink-dark) font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-(--clr-accent-light) after:transition-[width] after:duration-300 hover:after:w-full"
         >Contacto</a
       >
 
       <a
-        href="/carta"
-        class="relative inline-flex items-center gap-2 px-5.5 py-2.5 bg-[#2E4F3F] text-[#F7F1E8] text-[10.5px] tracking-[0.18em] uppercase font-medium no-underline overflow-hidden transition-colors font-['DM_Sans',system-ui,sans-serif] group/cta"
+        href="/menu"
+        class="relative inline-flex items-center gap-2 px-5.5 py-2.5 bg-(--clr-green) text-(--clr-bg) text-[10.5px] tracking-[0.18em] uppercase font-medium no-underline overflow-hidden transition-colors font-['DM_Sans',system-ui,sans-serif] group/cta"
       >
         <span
-          class="absolute inset-0 bg-[#B08D57] -translate-x-full transition-transform duration-350 ease-in-out group-hover/cta:translate-x-0"
+          class="absolute inset-0 bg-(--clr-accent-light) -translate-x-full transition-transform duration-350 ease-in-out group-hover/cta:translate-x-0"
         ></span>
         <span class="relative z-10">Ver Carta</span>
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" class="relative z-10">
@@ -136,28 +141,32 @@
 
     <button
       id="mobile-menu-btn"
-      class="md:hidden border border-[#1A120B]/15 hover:border-[#2E4F3F] transition-colors w-9.5 h-9.5 flex flex-col items-center justify-center gap-1.25"
+      class="md:hidden border border-(--clr-ink-dark)/15 hover:border-(--clr-green) transition-colors w-9.5 h-9.5 flex flex-col items-center justify-center gap-1.25"
       aria-label="Abrir menú de navegación"
     >
-      <span id="hb-1" class="block w-4 h-px bg-[#1A120B] transition-all duration-300 origin-center"
-      ></span>
-      <span id="hb-2" class="block w-4 h-px bg-[#1A120B] transition-all duration-300 origin-center"
-      ></span>
-      <span id="hb-3" class="block w-4 h-px bg-[#1A120B] transition-all duration-300 origin-center"
-      ></span>
+      <span
+        id="hb-1"
+        class="block w-4 h-px bg-(--clr-ink-dark) transition-all duration-300 origin-center"></span>
+      <span
+        id="hb-2"
+        class="block w-4 h-px bg-(--clr-ink-dark) transition-all duration-300 origin-center"></span>
+      <span
+        id="hb-3"
+        class="block w-4 h-px bg-(--clr-ink-dark) transition-all duration-300 origin-center"></span>
     </button>
   </div>
 
   <div
     id="mobile-menu"
-    class="hidden md:hidden border-t border-[#1A120B]/10 bg-[#F7F1E8] px-8 pb-8 pt-7"
+    class="hidden md:hidden border-t border-(--clr-ink-dark)/10 bg-(--clr-bg) px-8 pb-8 pt-7"
   >
     <nav class="flex flex-col">
       <a
         href="/#inicio"
-        class="flex justify-between items-center py-3.5 border-b border-[#1A120B]/10 text-[22px] font-normal text-[#1A120B] no-underline transition-colors hover:text-[#2E4F3F] font-['Cormorant_Garamond',Georgia,serif]"
+        class="flex justify-between items-center py-3.5 border-b border-(--clr-ink-dark)/10 text-[22px] font-normal text-(--clr-ink-dark) no-underline transition-colors hover:text-(--clr-green) font-['Cormorant_Garamond',Georgia,serif]"
       >
-        Inicio <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+        Inicio
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
           ><path
             d="M5 8h6M8 5l3 3-3 3"
             stroke="currentColor"
@@ -168,9 +177,10 @@
       </a>
       <a
         href="/#variedades"
-        class="flex justify-between items-center py-3.5 border-b border-[#1A120B]/10 text-[22px] font-normal text-[#1A120B] no-underline transition-colors hover:text-[#2E4F3F] font-['Cormorant_Garamond',Georgia,serif]"
+        class="flex justify-between items-center py-3.5 border-b border-(--clr-ink-dark)/10 text-[22px] font-normal text-(--clr-ink-dark) no-underline transition-colors hover:text-(--clr-green) font-['Cormorant_Garamond',Georgia,serif]"
       >
-        Variedades <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+        Variedades
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
           ><path
             d="M5 8h6M8 5l3 3-3 3"
             stroke="currentColor"
@@ -181,9 +191,10 @@
       </a>
       <a
         href="/#contacto"
-        class="flex justify-between items-center py-3.5 border-b border-[#1A120B]/10 text-[22px] font-normal text-[#1A120B] no-underline transition-colors hover:text-[#2E4F3F] font-['Cormorant_Garamond',Georgia,serif]"
+        class="flex justify-between items-center py-3.5 border-b border-(--clr-ink-dark)/10 text-[22px] font-normal text-(--clr-ink-dark) no-underline transition-colors hover:text-(--clr-green) font-['Cormorant_Garamond',Georgia,serif]"
       >
-        Contacto <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+        Contacto
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
           ><path
             d="M5 8h6M8 5l3 3-3 3"
             stroke="currentColor"
@@ -193,8 +204,8 @@
         >
       </a>
       <a
-        href="/carta"
-        class="mt-6 block text-center bg-[#2E4F3F] text-[#F7F1E8] py-3.5 text-[11px] tracking-[0.2em] uppercase font-medium no-underline hover:bg-[#B08D57] transition-colors font-['DM_Sans',system-ui,sans-serif]"
+        href="/menu"
+        class="mt-6 block text-center bg-(--clr-green) text-(--clr-bg) py-3.5 text-[11px] tracking-[0.2em] uppercase font-medium no-underline hover:bg-(--clr-accent-light) transition-colors font-['DM_Sans',system-ui,sans-serif]"
       >
         Ver Carta Completa →
       </a>
@@ -202,11 +213,11 @@
   </div>
 
   <div class="flex items-center px-8">
-    <div class="flex-1 h-px bg-[#1A120B]/10"></div>
-    <div class="w-0.75 h-0.75 rounded-full bg-[#1A120B]/15 mx-2"></div>
-    <div class="w-1.25 h-1.25 bg-[#B08D57] mx-2.5 rotate-45 opacity-60"></div>
-    <div class="w-0.75 h-0.75 rounded-full bg-[#1A120B]/15 mx-2"></div>
-    <div class="flex-1 h-px bg-[#1A120B]/10"></div>
+    <div class="flex-1 h-px bg-(--clr-ink-dark)/10"></div>
+    <div class="w-0.75 h-0.75 rounded-full bg-(--clr-ink-dark)/15 mx-2"></div>
+    <div class="w-1.25 h-1.25 bg-(--clr-accent-light) mx-2.5 rotate-45 opacity-60"></div>
+    <div class="w-0.75 h-0.75 rounded-full bg-(--clr-ink-dark)/15 mx-2"></div>
+    <div class="flex-1 h-px bg-(--clr-ink-dark)/10"></div>
   </div>
 </header>
 
@@ -235,7 +246,6 @@
       () => {
         const y = window.scrollY
         header.style.boxShadow = y > 10 ? '0 2px 40px rgba(26,18,11,0.10)' : 'none'
-
         if (y > 74) {
           strip.style.height = '0'
           strip.style.opacity = '0'

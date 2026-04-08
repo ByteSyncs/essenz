@@ -3,6 +3,7 @@ export interface MenuItem {
   price: string
   description: string
   intensity?: number
+  image: string
   details: {
     grams: string
     bitterness: string
