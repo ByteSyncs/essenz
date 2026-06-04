@@ -1,0 +1,60 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { CheckoutPage } from '../components/react/checkout/CheckoutPage'
+import { PLANS } from '../constants/suscriptions'
+import type { PlansId } from '../types/plans'
+
+const paramKey = Astro.url.searchParams.get('plan')?.toLowerCase()
+const isValidKey = paramKey && paramKey in PLANS && paramKey !== 'custom'
+
+if (!isValidKey) {
+  console.error('here')
+  return Astro.redirect('/')
+}
+
+const selectedPlan = PLANS[paramKey as keyof typeof PLANS]
+if (selectedPlan.price === null) {
+  console.error('El plan seleccionado no tiene un precio definido')
+  return Astro.redirect('/')
+}
+
+const {
+  data: { user },
+} = await Astro.locals.supabase.auth.getUser()
+
+if (!user) {
+  return Astro.redirect('/?error=unauthorized')
+}
+
+const { data: profile, error } = await Astro.locals.supabase
+  .from('profiles')
+  .select('client_name, organizations (name)')
+  .eq('id', user?.id)
+  .single()
+
+if (error) {
+  console.error('Error cargando perfil:', error)
+  return Astro.redirect(`/auth/sign-up?plan=${selectedPlan.id}`)
+}
+
+const organization = Array.isArray(profile.organizations)
+  ? profile.organizations[0]
+  : profile.organizations
+
+const userData = {
+  userName: profile?.client_name,
+  company_name: organization.name,
+  plan: selectedPlan.id,
+  price: selectedPlan.price,
+}
+---
+
+<Layout title="Checkout | Essenz" description="Completá tu pago">
+  <CheckoutPage
+    client:load
+    clientName={userData.userName}
+    companyName={userData.company_name}
+    planName={userData.plan as PlansId}
+    price={userData.price ?? 1}
+  />
+</Layout>

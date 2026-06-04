@@ -1,0 +1,151 @@
+---
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout
+  title="500 - Error interno | Essenz"
+  description="Algo salió mal de nuestro lado. Estamos trabajando para solucionarlo."
+>
+  <main
+    class="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-6 py-24 overflow-hidden"
+    style="background-color: var(--clr-bg);"
+  >
+    <div
+      class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+      style="opacity: 0.03;"
+    >
+      <span
+        class="text-[40vw] font-bold leading-none select-none"
+        style="font-family: var(--font-display); color: var(--clr-ink);"
+      >
+        500
+      </span>
+    </div>
+
+    <div class="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
+      <div
+        class="relative w-40 h-40 md:w-48 md:h-48 mb-10 group transition-transform duration-300 hover:-translate-y-2"
+      >
+        <div
+          class="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-50 transition-opacity duration-500"
+        >
+          <svg
+            class="w-3 h-6 animate-bounce"
+            style="animation-delay: 0ms; color: var(--clr-ink);"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 2 L8 10 L12 8 L16 10 Z"></path>
+          </svg>
+          <svg
+            class="w-3 h-8 animate-bounce"
+            style="animation-delay: 200ms; color: var(--clr-accent);"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 2 L8 10 L12 8 L16 10 Z"></path>
+          </svg>
+          <svg
+            class="w-3 h-5 animate-bounce"
+            style="animation-delay: 400ms; color: var(--clr-ink);"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 2 L8 10 L12 8 L16 10 Z"></path>
+          </svg>
+        </div>
+
+        <svg
+          viewBox="0 0 120 120"
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-full h-full drop-shadow-xl"
+          style="color: var(--clr-green);"
+        >
+          <rect x="30" y="50" width="60" height="58" rx="6" fill="currentColor"></rect>
+          <rect x="28" y="44" width="64" height="14" rx="4" fill="var(--clr-ink-dark)"></rect>
+          <rect x="36" y="46" width="48" height="10" rx="3" fill="var(--clr-accent)"></rect>
+
+          <path
+            d="M 90 57 C 108 57, 108 75, 90 75"
+            fill="none"
+            stroke="var(--clr-ink-dark)"
+            stroke-width="10"
+            stroke-linecap="round"></path>
+          <path
+            d="M 90 57 C 104 57, 104 75, 90 75"
+            fill="none"
+            stroke="var(--clr-accent-light)"
+            stroke-width="5"
+            stroke-linecap="round"
+            opacity="0.4"></path>
+
+          <rect x="48" y="22" width="8" height="22" rx="4" fill="var(--clr-ink-dark)"></rect>
+          <rect x="64" y="16" width="8" height="28" rx="4" fill="var(--clr-ink-dark)"></rect>
+
+          <circle cx="48" cy="18" r="6" fill="var(--clr-accent)"></circle>
+          <circle cx="68" cy="12" r="6" fill="var(--clr-accent)"></circle>
+
+          <text
+            x="60"
+            y="82"
+            text-anchor="middle"
+            font-size="13"
+            font-weight="bold"
+            fill="var(--clr-bg)"
+            font-family="monospace"
+            letter-spacing="1">ERR</text
+          >
+
+          <circle cx="34" cy="98" r="3" fill="var(--clr-accent)" opacity="0.5"></circle>
+          <circle cx="88" cy="102" r="2" fill="var(--clr-accent-light)" opacity="0.6"></circle>
+          <circle cx="74" cy="108" r="2.5" fill="var(--clr-accent)" opacity="0.4"></circle>
+        </svg>
+      </div>
+
+      <h1
+        class="text-4xl md:text-5xl font-bold mb-5 tracking-tight"
+        style="color: var(--clr-ink-dark); font-family: var(--font-display);"
+      >
+        La cafetera explotó
+      </h1>
+
+      <p
+        class="text-base md:text-lg mb-10 max-w-lg leading-relaxed"
+        style="color: var(--clr-ink); opacity: 0.7; font-family: var(--font-body);"
+      >
+        Algo salió mal de nuestro lado. Nuestro equipo ya está limpiando el desastre. Intentá de
+        nuevo en unos instantes.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center gap-4">
+        <a
+          href="/"
+          class="group inline-flex items-center gap-3 px-8 py-4 text-white text-xs tracking-[0.2em] uppercase transition-colors duration-300 rounded-(--radius-btn)"
+          style="background-color: var(--clr-accent);"
+          onmouseover="this.style.backgroundColor='var(--clr-green)'"
+          onmouseout="this.style.backgroundColor='var(--clr-accent)'"
+        >
+          <span>Volver al inicio</span>
+          <svg
+            class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 12h14"></path>
+            <path d="m12 5 7 7-7 7"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </main>
+</Layout>

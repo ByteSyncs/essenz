@@ -1,0 +1,88 @@
+---
+import supabase from '../../libs/supabase'
+import Layout from '../../layouts/Layout.astro'
+import Header from '../../components/Header.astro'
+import Hero from '../../components/Hero.astro'
+import CoffeeGrid from '../../components/CoffeeGrid.astro'
+import InteractiveSection from '../../components/InteractiveSection.astro'
+import Reviews from '../../components/Reviews.astro'
+import Contact from '../../components/Contact.astro'
+import Footer from '../../components/Footer.astro'
+
+const { slug } = Astro.params
+const cleanSlug = slug?.toString().trim().toLowerCase()
+
+const { data: tenant, error } = await supabase
+  .from('organizations')
+  .select(
+    `
+    *,
+    products (
+      id,
+      name, 
+      description,
+      price,
+      image_url,
+      intensity,
+      details,
+      display_order
+    )
+  `,
+  )
+  .eq('slug', cleanSlug)
+  .single()
+
+if (error || !tenant) {
+  return Astro.redirect('/404')
+}
+
+const { theme, name, tagline, logo_url, brand_colors, products } = tenant
+
+const title = `${name} | ${tagline || 'Cafe de Especialidad'}`
+const description =
+  tagline || `Disfrutá de la mejor experiencia en ${name}. Calidad y sabor en cada taza.`
+
+const dynamicStyles = brand_colors
+  ? Object.entries(brand_colors)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('; ')
+  : ''
+---
+
+<Layout title={title} description={description} theme={theme} preloadImage={logo_url}>
+  <style set:html={`:root { ${dynamicStyles} }`}></style>
+  <Header theme={theme} logo={logo_url} name={name} tagline={tagline} />
+
+  <main>
+    <Hero theme={theme} />
+    <CoffeeGrid theme={theme} dataProducts={products} />
+    <InteractiveSection theme={theme} />
+    <Reviews />
+    <Contact />
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .review-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+
+<script>
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.remove('opacity-0', 'translate-y-4')
+          e.target.classList.add('opacity-100', 'translate-y-0')
+          observer.unobserve(e.target)
+        }
+      })
+    },
+    { threshold: 0.1 },
+  )
+  document.querySelectorAll('.review-item').forEach((el) => observer.observe(el))
+</script>

@@ -2,31 +2,60 @@
 import { coffeeQuiz } from '../data/coffeeQuiz'
 import type { CoffeeQuizData } from '../types/coffeeQuiz'
 
+interface Props {
+  theme?: 'modern' | 'minimalist'
+}
+
+const { theme = 'modern' } = Astro.props
+const isMin = theme === 'minimalist'
+
 const cq: CoffeeQuizData = coffeeQuiz
 const { steps, results } = cq
+const menuUrl = Astro.url.pathname + '/menu'
 ---
 
-<section id="interactivo" class="py-24 bg-(--clr-green) text-(--clr-bg)">
+<section
+  id="interactivo"
+  class:list={['py-24 text-(--clr-bg)', isMin ? 'bg-(--clr-ink)' : 'bg-(--clr-green)']}
+>
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
     <span
-      class="inline-block text-(--clr-bg)/50 text-xs tracking-[0.3em] uppercase mb-4 font-medium"
+      class:list={[
+        'inline-block text-xs tracking-[0.3em] uppercase mb-4',
+        isMin ? 'text-(--clr-bg)/40' : 'text-(--clr-bg)/50',
+      ]}
     >
       Quiz de Sabor
     </span>
-    <h2 class="text-4xl md:text-5xl font-bold mb-4">Descubrí tu Café Ideal</h2>
+    <h2
+      class:list={[
+        'font-(--font-display) mb-4',
+        isMin
+          ? 'text-4xl md:text-5xl font-bold tracking-[-0.02em]'
+          : 'text-4xl md:text-5xl font-bold',
+      ]}
+    >
+      Descubrí tu Café Ideal
+    </h2>
     <p class="text-(--clr-bg)/60 mb-12 text-base max-w-md mx-auto">
       Dos preguntas. Una taza perfecta. Tu próximo favorito te está esperando.
     </p>
 
     <div
       id="quiz-card"
-      class="bg-(--clr-bg) text-(--clr-ink) shadow-2xl relative overflow-hidden text-left max-w-2xl mx-auto"
-      style="border-radius: 4px;"
+      class:list={[
+        'bg-(--clr-bg) text-(--clr-ink) shadow-2xl relative overflow-hidden text-left max-w-2xl mx-auto',
+        isMin ? 'rounded-none' : 'rounded-sm',
+      ]}
     >
-      <div class="h-1 bg-(--clr-ink)/10 w-full">
+      <!-- Progress bar -->
+      <div class="h-0.5 bg-(--clr-ink)/10 w-full">
         <div
           id="progress-bar"
-          class="h-1 bg-(--clr-progress) transition-all duration-500 ease-out"
+          class:list={[
+            'h-0.5 transition-all duration-500 ease-out',
+            isMin ? 'bg-(--clr-accent)' : 'bg-(--clr-progress)',
+          ]}
           style="width: 0%"
         >
         </div>
@@ -34,22 +63,75 @@ const { steps, results } = cq
 
       <!-- Step 1 -->
       <div id="step-1" class="p-8 md:p-12">
-        <div class="flex items-center gap-2 mb-8">
-          <span class="text-2xl">{steps[0].emoji}</span>
-          <span class="text-(--clr-green) font-bold text-xs tracking-widest uppercase">01 / 02</span
-          >
-        </div>
-        <h3 class="text-2xl md:text-3xl font-bold mb-8 leading-tight">{steps[0].question}</h3>
+        {
+          isMin ? (
+            /* ── Minimalist step header ── */
+            <div class="flex items-center justify-between mb-10">
+              <div class="flex items-center gap-3">
+                <span class="text-xl">{steps[0].emoji}</span>
+                <span class="text-[10px] font-bold tracking-[0.3em] uppercase text-(--clr-ink)/35">
+                  Paso 01 / 02
+                </span>
+              </div>
+              <div class="flex gap-1.5">
+                <span class="w-6 h-0.5 bg-(--clr-accent)" />
+                <span class="w-6 h-0.5 bg-(--clr-ink)/15" />
+              </div>
+            </div>
+          ) : (
+            <div class="flex items-center gap-2 mb-8">
+              <span class="text-2xl">{steps[0].emoji}</span>
+              <span class="font-bold text-xs tracking-widest uppercase text-(--clr-green)">
+                01 / 02
+              </span>
+            </div>
+          )
+        }
+
+        <h3
+          class:list={[
+            'font-bold mb-8 leading-tight',
+            isMin ? 'text-2xl md:text-3xl tracking-[-0.02em]' : 'text-2xl md:text-3xl',
+          ]}
+        >
+          {steps[0].question}
+        </h3>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {
             steps[0].options.map((opt) => (
               <button
-                class="quiz-opt flex flex-col gap-1 border border-(--clr-ink)/15 p-5 text-left hover:border-(--clr-ink)/50 hover:bg-(--clr-ink)/5 active:scale-[0.98] transition-all duration-150"
+                class:list={[
+                  'quiz-opt flex flex-col gap-1.5 border p-5 text-left transition-all duration-150',
+                  isMin
+                    ? [
+                        'border-(--clr-ink)/15 hover:border-(--clr-ink)',
+                        'hover:bg-(--clr-ink) hover:text-(--clr-bg)',
+                        'active:scale-[0.98] group',
+                      ]
+                    : 'border-(--clr-ink)/15 hover:border-(--clr-ink)/50 hover:bg-(--clr-ink)/5 active:scale-[0.98]',
+                ]}
                 data-step="1"
                 data-value={opt.value}
               >
-                <span class="font-semibold text-(--clr-ink) text-sm">{opt.label}</span>
-                <span class="text-(--clr-ink)/45 text-xs">{opt.sub}</span>
+                <span
+                  class:list={[
+                    'font-bold text-sm transition-colors duration-150',
+                    isMin ? 'text-(--clr-ink) group-hover:text-(--clr-bg)' : 'text-(--clr-ink)',
+                  ]}
+                >
+                  {opt.label}
+                </span>
+                <span
+                  class:list={[
+                    'text-xs transition-colors duration-150',
+                    isMin
+                      ? 'text-(--clr-ink)/45 group-hover:text-(--clr-bg)/60'
+                      : 'text-(--clr-ink)/45',
+                  ]}
+                >
+                  {opt.sub}
+                </span>
               </button>
             ))
           }
@@ -58,31 +140,97 @@ const { steps, results } = cq
 
       <!-- Step 2 -->
       <div id="step-2" class="hidden p-8 md:p-12">
-        <div class="flex items-center gap-3 mb-8">
-          <button
-            id="back-btn"
-            class="text-(--clr-ink)/40 hover:text-(--clr-ink) text-xs tracking-widest uppercase transition-colors flex items-center gap-1"
-          >
-            ← Volver
-          </button>
-          <div class="flex items-center gap-2 ml-auto">
-            <span class="text-2xl">{steps[1].emoji}</span>
-            <span class="text-(--clr-green) font-bold text-xs tracking-widest uppercase"
-              >02 / 02</span
-            >
-          </div>
-        </div>
-        <h3 class="text-2xl md:text-3xl font-bold mb-8 leading-tight">{steps[1].question}</h3>
+        {
+          isMin ? (
+            <div class="flex items-center justify-between mb-10">
+              <button
+                id="back-btn"
+                class="flex items-center gap-2 text-[10px] tracking-[0.25em] uppercase font-bold text-(--clr-ink)/40 hover:text-(--clr-ink) transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path
+                    d="M8 2L4 6l4 4"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Volver
+              </button>
+              <div class="flex items-center gap-3">
+                <span class="text-xl">{steps[1].emoji}</span>
+                <span class="text-[10px] font-bold tracking-[0.3em] uppercase text-(--clr-ink)/35">
+                  Paso 02 / 02
+                </span>
+                <div class="flex gap-1.5">
+                  <span class="w-6 h-0.5 bg-(--clr-ink)/20" />
+                  <span class="w-6 h-0.5 bg-(--clr-accent)" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div class="flex items-center gap-3 mb-8">
+              <button
+                id="back-btn"
+                class="text-(--clr-ink)/40 hover:text-(--clr-ink) text-xs tracking-widest uppercase transition-colors flex items-center gap-1"
+              >
+                ← Volver
+              </button>
+              <div class="flex items-center gap-2 ml-auto">
+                <span class="text-2xl">{steps[1].emoji}</span>
+                <span class="font-bold text-xs tracking-widest uppercase text-(--clr-green)">
+                  02 / 02
+                </span>
+              </div>
+            </div>
+          )
+        }
+
+        <h3
+          class:list={[
+            'font-bold mb-8 leading-tight',
+            isMin ? 'text-2xl md:text-3xl tracking-[-0.02em]' : 'text-2xl md:text-3xl',
+          ]}
+        >
+          {steps[1].question}
+        </h3>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {
             steps[1].options.map((opt) => (
               <button
-                class="quiz-opt flex flex-col gap-1 border border-(--clr-ink)/15 p-5 text-left hover:border-(--clr-ink)/50 hover:bg-(--clr-ink)/5 active:scale-[0.98] transition-all duration-150"
+                class:list={[
+                  'quiz-opt flex flex-col gap-1.5 border p-5 text-left transition-all duration-150',
+                  isMin
+                    ? [
+                        'border-(--clr-ink)/15 hover:border-(--clr-ink)',
+                        'hover:bg-(--clr-ink) hover:text-(--clr-bg)',
+                        'active:scale-[0.98] group',
+                      ]
+                    : 'border-(--clr-ink)/15 hover:border-(--clr-ink)/50 hover:bg-(--clr-ink)/5 active:scale-[0.98]',
+                ]}
                 data-step="2"
                 data-value={opt.value}
               >
-                <span class="font-semibold text-(--clr-ink) text-sm">{opt.label}</span>
-                <span class="text-(--clr-ink)/45 text-xs">{opt.sub}</span>
+                <span
+                  class:list={[
+                    'font-bold text-sm transition-colors duration-150',
+                    isMin ? 'text-(--clr-ink) group-hover:text-(--clr-bg)' : 'text-(--clr-ink)',
+                  ]}
+                >
+                  {opt.label}
+                </span>
+                <span
+                  class:list={[
+                    'text-xs transition-colors duration-150',
+                    isMin
+                      ? 'text-(--clr-ink)/45 group-hover:text-(--clr-bg)/60'
+                      : 'text-(--clr-ink)/45',
+                  ]}
+                >
+                  {opt.sub}
+                </span>
               </button>
             ))
           }
@@ -91,44 +239,87 @@ const { steps, results } = cq
 
       <!-- Result -->
       <div id="result" class="hidden p-8 md:p-12">
-        <div class="flex items-center justify-between mb-10">
-          <span
-            class="inline-block bg-(--clr-green) text-(--clr-bg) text-xs font-bold tracking-widest uppercase px-3 py-1"
-            style="border-radius:2px;"
-          >
-            Tu match perfecto
-          </span>
-          <button
-            id="reset-btn"
-            class="text-xs text-(--clr-ink)/40 hover:text-(--clr-ink) underline underline-offset-4 transition-colors"
-          >
-            Volver a intentar
-          </button>
-        </div>
-        <span
-          id="result-tag"
-          class="text-(--clr-green)/60 text-xs font-semibold tracking-widest uppercase block mb-2"
-        ></span>
+        {
+          isMin ? (
+            /* ── Minimalist result header ── */
+            <div class="flex items-start justify-between mb-10 gap-4">
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="w-2 h-2 bg-(--clr-accent)" />
+                  <span class="text-[10px] font-bold tracking-[0.3em] uppercase text-(--clr-ink)/40">
+                    Tu match perfecto
+                  </span>
+                </div>
+                <span
+                  id="result-tag"
+                  class="text-xs font-bold tracking-widest uppercase text-(--clr-accent) block"
+                />
+              </div>
+              <button
+                id="reset-btn"
+                class="text-[10px] tracking-[0.2em] uppercase font-bold text-(--clr-ink)/30 hover:text-(--clr-ink) transition-colors shrink-0 mt-1"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : (
+            <div class="flex items-center justify-between mb-10">
+              <span
+                class="inline-block text-xs font-bold tracking-widest uppercase px-3 py-1 bg-(--clr-green) text-(--clr-bg)"
+                style="border-radius:2px;"
+              >
+                Tu match perfecto
+              </span>
+              <button
+                id="reset-btn"
+                class="text-xs text-(--clr-ink)/40 hover:text-(--clr-ink) underline underline-offset-4 transition-colors"
+              >
+                Volver a intentar
+              </button>
+            </div>
+          )
+        }
+
+        {
+          !isMin && (
+            <span
+              id="result-tag"
+              class="text-xs font-semibold tracking-widest uppercase block mb-2 text-(--clr-green)/60"
+            />
+          )
+        }
+
         <h3
           id="result-title"
-          class="text-3xl md:text-4xl font-bold mb-4 text-(--clr-ink) leading-tight"
+          class:list={[
+            'font-bold mb-4 text-(--clr-ink) leading-tight',
+            isMin ? 'text-3xl md:text-4xl tracking-[-0.03em]' : 'text-3xl md:text-4xl',
+          ]}
         >
         </h3>
         <p id="result-desc" class="text-(--clr-ink)/60 text-base leading-relaxed mb-10 max-w-sm">
         </p>
+
         <div
-          class="border-t border-(--clr-ink)/10 pt-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+          class:list={[
+            'border-t border-(--clr-ink)/10 pt-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between',
+          ]}
         >
           <p class="text-xs text-(--clr-ink)/40 max-w-55 leading-relaxed">
             Pedilo en cualquiera de nuestros locales.
           </p>
           <a
-            href="/menu"
-            class="inline-flex items-center gap-2 bg-(--clr-ink) text-(--clr-bg) text-sm font-semibold px-6 py-3 hover:bg-(--clr-green) transition-colors"
-            style="border-radius:2px;"
+            href={menuUrl}
+            class:list={[
+              'inline-flex items-center gap-2 text-sm font-bold px-6 py-3 transition-all duration-200',
+              isMin
+                ? 'bg-(--clr-ink) text-(--clr-bg) hover:bg-(--clr-accent) tracking-wide'
+                : 'bg-(--clr-ink) text-(--clr-bg) hover:bg-(--clr-green)',
+            ]}
+            style={isMin ? '' : 'border-radius:2px;'}
           >
             Ver menú completo
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <path
                 d="M2 7H12M8 3L12 7L8 11"
                 stroke="currentColor"
@@ -140,6 +331,7 @@ const { steps, results } = cq
         </div>
       </div>
 
+      <!-- Hidden data -->
       <div id="results-data" class="hidden" aria-hidden="true">
         {
           Object.entries(results).map(([key, val]) => (
@@ -183,14 +375,20 @@ const { steps, results } = cq
     if (progressBar) progressBar.style.width = `${pct}%`
   }
 
+  const show = (el: HTMLElement) => {
+    el.classList.remove('hidden')
+    el.style.animation = 'quizFadeIn 0.25s ease both'
+  }
+  const hide = (el: HTMLElement) => el.classList.add('hidden')
+
   const updateQuiz = (step: string, value: string) => {
     if (step === '1') {
       prefStep1 = value
-      step1El.classList.add('hidden')
-      step2El.classList.remove('hidden')
+      hide(step1El)
+      show(step2El)
       setProgress(50)
     } else {
-      step2El.classList.add('hidden')
+      hide(step2El)
       showResult(value)
     }
   }
@@ -199,16 +397,16 @@ const { steps, results } = cq
     btn.addEventListener('click', () => updateQuiz(btn.dataset.step || '', btn.dataset.value || ''))
   })
 
-  backBtn.addEventListener('click', () => {
-    step2El.classList.add('hidden')
-    step1El.classList.remove('hidden')
+  backBtn?.addEventListener('click', () => {
+    hide(step2El)
+    show(step1El)
     setProgress(0)
   })
 
-  resetBtn.addEventListener('click', () => {
+  resetBtn?.addEventListener('click', () => {
     prefStep1 = ''
-    resultEl.classList.add('hidden')
-    step1El.classList.remove('hidden')
+    hide(resultEl)
+    show(step1El)
     setProgress(0)
   })
 
@@ -216,11 +414,27 @@ const { steps, results } = cq
     const key = `${prefStep1}-${prefStep2}`
     const data = resultsMap[key]
     if (data) {
-      getEl('result-tag').textContent = data.tag
-      getEl('result-title').textContent = data.title
-      getEl('result-desc').textContent = data.desc
+      const tag = document.getElementById('result-tag')
+      const title = document.getElementById('result-title')
+      const desc = document.getElementById('result-desc')
+      if (tag) tag.textContent = data.tag
+      if (title) title.textContent = data.title
+      if (desc) desc.textContent = data.desc
       setProgress(100)
-      resultEl.classList.remove('hidden')
+      show(resultEl)
     }
   }
 </script>
+
+<style>
+  @keyframes quizFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

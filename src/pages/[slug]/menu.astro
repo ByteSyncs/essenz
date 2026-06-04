@@ -1,0 +1,804 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import supabase from '../../libs/supabase'
+
+const { slug } = Astro.params
+const cleanSlug = slug?.toString().trim().toLowerCase()
+
+const { data: tenant, error: orgError } = await supabase
+  .from('organizations')
+  .select('id, name, slug, theme, tagline, logo_url, brand_colors')
+  .eq('slug', cleanSlug)
+  .single()
+
+if (orgError || !tenant) return Astro.redirect('/404')
+
+const { data: categories, error: catError } = await supabase
+  .from('categories')
+  .select(
+    `
+    id,
+    title,
+    display_order,
+    products (
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      intensity,
+      in_offer,
+      offer_percent,
+      is_active,
+      details,
+      display_order
+    )
+  `,
+  )
+  .eq('organization_id', tenant.id)
+  .eq('products.is_active', true)
+  .order('display_order', { ascending: true })
+
+if (catError) console.error('[menu] categories error:', catError)
+
+const cats = (categories ?? []).map((cat) => ({
+  ...cat,
+  products: [...(cat.products ?? [])]
+    .filter((p) => p.is_active)
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
+}))
+
+const toSlug = (t: string) => {
+  return t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w-]+/g, '-')
+}
+
+const { theme = 'modern', name, tagline, brand_colors } = tenant
+const isMin = theme === 'minimalist'
+
+const pageTitle = `Carta | ${name}`
+const pageDescription = tagline ?? `Explorá la selección de ${name}.`
+
+const dynamicStyles = brand_colors
+  ? Object.entries(brand_colors as Record<string, string>)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('; ')
+  : ''
+
+const defaultImage =
+  'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=800&q=80'
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(n)
+---
+
+<Layout title={pageTitle} description={pageDescription} theme={theme}>
+  <style set:html={`:root { ${dynamicStyles} }`}></style>
+
+  <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 md:hidden">
+    <nav
+      id="mobile-menu"
+      class="hidden flex-col-reverse gap-3 items-end animate-in fade-in slide-in-from-bottom-4 duration-300"
+    >
+      <a
+        href={`/${cleanSlug}`}
+        class="flex items-center gap-3 bg-(--clr-bg) text-(--clr-ink) px-5 py-3 rounded-full shadow-xl border border-(--clr-ink)/10 font-bold text-sm"
+      >
+        Volver al Inicio
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          ><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline
+            points="9 22 9 12 15 12 15 22"></polyline></svg
+        >
+      </a>
+      {
+        cats.map((cat) => (
+          <a
+            href={`#${toSlug(cat.title)}`}
+            class="mobile-cat-link bg-(--clr-bg) text-(--clr-ink) px-5 py-3 rounded-full shadow-xl border border-(--clr-ink)/10 text-sm font-medium"
+          >
+            {cat.title}
+          </a>
+        ))
+      }
+    </nav>
+    <button
+      id="burger-trigger"
+      class="w-14 h-14 bg-(--clr-ink) text-(--clr-bg) rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-90"
+    >
+      <svg
+        id="icon-open"
+        class="w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        ><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line
+          x1="3"
+          y1="18"
+          x2="21"
+          y2="18"></line></svg
+      >
+      <svg
+        id="icon-close"
+        class="hidden w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        ><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg
+      >
+    </button>
+  </div>
+
+  <main
+    id="menu-wrapper"
+    data-is-min={String(isMin)}
+    class:list={[
+      'min-h-screen pb-20 bg-(--clr-bg) relative',
+      isMin
+        ? 'pt-0'
+        : 'pt-20 md:pt-10 bg-[radial-gradient(color-mix(in_srgb,var(--clr-ink)_7%,transparent)_1px,transparent_1px)] bg-size-[40px_40px]',
+    ]}
+  >
+    <div class="hidden md:block">
+      {
+        !isMin ? (
+          <a
+            href={`/${cleanSlug}`}
+            class="group absolute top-4 left-4 z-50 inline-flex items-center gap-2.5 bg-(--clr-bg) text-(--clr-ink) px-5 py-2.5 font-(--font-ui) text-sm shadow-sm ring-1 ring-(--clr-ink)/15 transition-all duration-300 hover:bg-(--clr-ink) hover:text-(--clr-bg) rounded-(--radius-btn)"
+          >
+            <svg
+              class="w-5 h-5 transition-transform duration-300 group-hover:-translate-x-1"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path d="M6 2v2M10 2v2M14 2v2M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+            </svg>
+            Volver al Inicio
+          </a>
+        ) : (
+          <div class="sticky top-0 z-40 bg-white border-b border-black/8 backdrop-blur-sm">
+            <div class="max-w-7xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between gap-4">
+              <a
+                href={`/${cleanSlug}`}
+                class="group flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] uppercase text-black/40 hover:text-black no-underline transition-colors duration-200"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M10 2L4 7l6 5" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+                {name}
+              </a>
+              <nav
+                id="cat-nav"
+                class="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 justify-end"
+              >
+                {cats.map((cat, i) => (
+                  <a
+                    href={`#${toSlug(cat.title)}`}
+                    data-cat-pill={cat.title}
+                    class:list={[
+                      'shrink-0 px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase no-underline transition-all duration-200 border',
+                      i === 0
+                        ? 'bg-black text-white border-black'
+                        : 'bg-transparent text-black/40 border-black/15 hover:border-black hover:text-black',
+                    ]}
+                  >
+                    {cat.title}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </div>
+        )
+      }
+    </div>
+
+    <div class="mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+      {
+        isMin ? (
+          <div class="pt-14 pb-12 border-b border-black/8 mb-0">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <span class="block text-[10px] font-bold tracking-[0.35em] uppercase text-black/30 mb-3">
+                  — Selección actual
+                </span>
+                <h1 class="text-[clamp(3rem,8vw,6rem)] font-bold text-black tracking-[-0.04em] leading-none">
+                  Carta
+                </h1>
+              </div>
+              <p class="text-sm text-black/40 max-w-xs leading-relaxed pb-1">{pageDescription}</p>
+            </div>
+          </div>
+        ) : (
+          <div class="relative py-16 mb-12 mt-[5%] text-center border-y border-(--clr-ink)/10 bg-(--clr-white)/40 rounded-3xl backdrop-blur-sm shadow-sm overflow-hidden">
+            <h1 class="text-6xl md:text-9xl font-black text-(--clr-ink) uppercase tracking-tighter opacity-5 absolute inset-0 flex items-center justify-center select-none">
+              MENU
+            </h1>
+            <div class="relative z-10">
+              <span class="inline-block bg-(--clr-green)/10 text-(--clr-green) px-4 py-1.5 rounded-full font-bold tracking-[0.2em] uppercase text-xs mb-4">
+                {name} Experience
+              </span>
+              <h2 class="text-4xl md:text-6xl font-bold text-(--clr-ink) italic">
+                Selección de Autor
+              </h2>
+            </div>
+          </div>
+        )
+      }
+
+      <div class:list={['mb-10 max-w-2xl', isMin ? 'pt-10' : 'mx-auto']}>
+        <div class="relative group">
+          <svg
+            class:list={[
+              'absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors',
+              isMin
+                ? 'text-black/30 group-focus-within:text-black'
+                : 'text-(--clr-ink)/40 group-focus-within:text-(--clr-green)',
+            ]}
+            width="18"
+            height="18"
+            viewBox="0 0 16 16"
+            fill="none"
+            ><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.8"></circle><path
+              d="M10.5 10.5L14 14"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"></path></svg
+          >
+          <input
+            id="search-input"
+            type="search"
+            autocomplete="off"
+            placeholder={isMin ? 'Buscar en la carta…' : 'Buscá por nombre, nota o categoría…'}
+            class:list={[
+              'w-full bg-white border pl-11 pr-10 py-3 text-sm text-(--clr-ink) outline-none transition-all',
+              isMin
+                ? 'border-black/15 focus:border-black rounded-none'
+                : 'border-2 border-(--clr-ink)/10 focus:border-(--clr-green) focus:ring-4 focus:ring-(--clr-green)/10 rounded-full shadow-sm hover:shadow-md',
+            ]}
+          />
+        </div>
+      </div>
+
+      <div id="menu-container" class:list={[isMin ? 'divide-y divide-black/8' : 'space-y-20']}>
+        {
+          cats.map((cat, catIndex) => (
+            <section
+              id={`${toSlug(cat.title)}`}
+              data-section
+              data-cat-id={cat.id}
+              class:list={[isMin ? 'py-16' : '']}
+            >
+              {isMin ? (
+                <>
+                  <div class="flex items-baseline gap-5 mb-10">
+                    <h2 class="text-2xl md:text-3xl font-bold text-black">{cat.title}</h2>
+                    <div class="h-px bg-black/8 flex-1 self-center" />
+                    <span class="text-[10px] font-bold tracking-[0.25em] uppercase text-black/25 shrink-0">
+                      {cat.products.length} items
+                    </span>
+                  </div>
+
+                  <div class="space-y-0">
+                    {cat.products.map((item, idx) => {
+                      const finalPrice =
+                        item.in_offer && item.offer_percent
+                          ? item.price * (1 - item.offer_percent / 100)
+                          : item.price
+                      const serialized = JSON.stringify({
+                        ...item,
+                        image: item.image_url || defaultImage,
+                        finalPrice,
+                      })
+                      const isEven = idx % 2 === 0
+                      const isFeatured = idx === 0 && catIndex === 0
+
+                      return isFeatured ? (
+                        <button
+                          type="button"
+                          class="menu-item group w-full text-left border-b border-black/8 focus:outline-none"
+                          data-nombre={item.name.toLowerCase()}
+                          data-details={serialized}
+                        >
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-0">
+                            <div class="relative overflow-hidden bg-black/5 aspect-4/3 sm:aspect-auto sm:min-h-70">
+                              <img
+                                src={item.image_url || defaultImage}
+                                alt=""
+                                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                loading="eager"
+                              />
+                              {item.in_offer && item.offer_percent && (
+                                <span class="absolute top-4 left-4 bg-black text-white text-[9px] font-bold tracking-[0.2em] uppercase px-3 py-1">
+                                  -{item.offer_percent}%
+                                </span>
+                              )}
+                            </div>
+                            <div class="flex flex-col justify-between p-6 sm:p-8 bg-white">
+                              <div>
+                                <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-black/30 block mb-3">
+                                  Destacado
+                                </span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-black tracking-[-0.03em] leading-tight group-hover:text-(--clr-accent) transition-colors duration-200 mb-3">
+                                  {item.name}
+                                </h3>
+                                {item.description && (
+                                  <p class="text-sm text-black/50 leading-relaxed line-clamp-3">
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div class="flex items-center justify-between mt-6 pt-6 border-t border-black/8">
+                                <span class="text-2xl font-bold text-black">{fmt(finalPrice)}</span>
+                                <span class="flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] uppercase text-black/40 group-hover:text-black transition-colors duration-200">
+                                  Ver detalle
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path
+                                      d="M2 7h10M8 3l4 4-4 4"
+                                      stroke="currentColor"
+                                      stroke-width="1.5"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                    />
+                                  </svg>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          class="menu-item group w-full text-left border-b border-black/8 hover:bg-black/2 transition-colors duration-150 focus:outline-none"
+                          data-nombre={item.name.toLowerCase()}
+                          data-details={serialized}
+                        >
+                          <div class="flex items-stretch gap-0">
+                            <div class="relative w-20 sm:w-28 shrink-0 overflow-hidden bg-black/5">
+                              <img
+                                src={item.image_url || defaultImage}
+                                alt=""
+                                class="w-full h-full object-cover grayscale-60 group-hover:grayscale-0 transition-all duration-500 aspect-square"
+                                loading="lazy"
+                              />
+                              {item.in_offer && item.offer_percent && (
+                                <span class="absolute top-2 left-2 bg-black text-white text-[8px] font-bold px-1.5 py-0.5">
+                                  -{item.offer_percent}%
+                                </span>
+                              )}
+                            </div>
+
+                            <div class="flex-1 flex items-center justify-between px-5 py-4 sm:py-5 min-w-0">
+                              <div class="min-w-0 pr-4">
+                                <div class="flex items-center gap-3 mb-1">
+                                  <span class="font-bold text-base sm:text-lg text-black leading-tight group-hover:text-(--clr-accent) transition-colors duration-200">
+                                    {item.name}
+                                  </span>
+                                </div>
+                                {item.description && (
+                                  <p class="text-xs sm:text-sm text-black/40 line-clamp-1 leading-snug">
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div class="shrink-0 text-right">
+                                <span class="block text-base sm:text-lg font-bold text-black">
+                                  {fmt(finalPrice)}
+                                </span>
+                                {item.in_offer && item.offer_percent && (
+                                  <span class="block text-xs text-black/30 line-through">
+                                    {fmt(item.price)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div class="w-10 sm:w-12 shrink-0 flex items-center justify-center border-l border-black/8 text-black/20 group-hover:text-black group-hover:bg-black/5 transition-all duration-200">
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path
+                                  d="M2 7h10M8 3l4 4-4 4"
+                                  stroke="currentColor"
+                                  stroke-width="1.5"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div class="flex items-center gap-6 mb-10">
+                    <h2 class="text-3xl font-bold text-(--clr-ink) whitespace-nowrap bg-(--clr-bg) pr-4">
+                      {cat.title}
+                    </h2>
+                    <div class="h-0.5 bg-linear-to-r from-(--clr-ink)/20 to-transparent w-full rounded-full" />
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {cat.products.map((item) => {
+                      const finalPrice =
+                        item.in_offer && item.offer_percent
+                          ? item.price * (1 - item.offer_percent / 100)
+                          : item.price
+                      const serialized = JSON.stringify({
+                        ...item,
+                        image: item.image_url || defaultImage,
+                        finalPrice,
+                      })
+                      return (
+                        <div
+                          class="menu-item bg-(--clr-white) flex flex-col overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer group border border-(--clr-ink)/5 rounded-3xl"
+                          data-nombre={item.name.toLowerCase()}
+                          data-details={serialized}
+                        >
+                          <div class="relative h-56 overflow-hidden bg-(--clr-ink)/5">
+                            <img
+                              src={item.image_url || defaultImage}
+                              alt={item.name}
+                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                              loading="lazy"
+                            />
+                            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end gap-2">
+                              <h4 class="text-xl font-bold text-white drop-shadow-md">
+                                {item.name}
+                              </h4>
+                              <span class="bg-white text-black font-bold px-3 py-1 text-sm shadow-lg rounded-xl">
+                                {fmt(finalPrice)}
+                              </span>
+                            </div>
+                          </div>
+                          <div class="p-6 flex-1">
+                            <p class="text-(--clr-ink)/60 text-sm leading-relaxed">
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </section>
+          ))
+        }
+      </div>
+    </div>
+  </main>
+
+  <dialog
+    id="item-modal"
+    class:list={[
+      'p-0 border-none max-w-md w-[calc(100%-2rem)] sm:w-full backdrop:bg-black/60 backdrop:backdrop-blur-md shadow-2xl overflow-hidden',
+      isMin ? 'bg-white rounded-none' : 'bg-(--clr-bg) rounded-3xl',
+    ]}
+    style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); margin:0;"
+  >
+    <div class="flex flex-col max-h-[90dvh] overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-black/8 shrink-0">
+        <span class="text-[10px] font-bold tracking-[0.3em] uppercase text-black/40 truncate"
+          >Ficha Técnica</span
+        >
+        <button id="close-modal" class="text-black/30 hover:text-black transition-colors">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="1.5"></path>
+          </svg>
+        </button>
+      </div>
+      <div
+        id="modal-image-container"
+        class="relative h-48 sm:h-56 w-full shrink-0 bg-black/5 overflow-hidden"
+      >
+      </div>
+      <div id="modal-content" class="p-6 sm:p-8 overflow-y-auto flex-1 overscroll-contain"></div>
+    </div>
+  </dialog>
+
+  <script>
+    function initMenu() {
+      const wrapper = document.querySelector('#menu-wrapper')
+      if (!wrapper) return
+
+      const isMin = wrapper.getAttribute('data-is-min') === 'true'
+      const modal = document.querySelector('#item-modal') as HTMLDialogElement
+
+      const burgerTrigger = document.getElementById('burger-trigger')
+      const mobileMenuNav = document.getElementById('mobile-menu')
+      const iconOpen = document.getElementById('icon-open')
+      const iconClose = document.getElementById('icon-close')
+      const catLinks = document.querySelectorAll('.mobile-cat-link')
+
+      function toggleMenu() {
+        mobileMenuNav?.classList.toggle('hidden')
+        mobileMenuNav?.classList.toggle('flex')
+        iconOpen?.classList.toggle('hidden')
+        iconClose?.classList.toggle('hidden')
+      }
+
+      burgerTrigger?.addEventListener('click', toggleMenu)
+      catLinks.forEach((link) => link.addEventListener('click', toggleMenu))
+
+      const searchInput = document.getElementById('search-input') as HTMLInputElement | null
+      const allItems = document.querySelectorAll<HTMLElement>('.menu-item')
+      const allSections = document.querySelectorAll<HTMLElement>('[data-section]')
+
+      searchInput?.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase()
+        allItems.forEach((item) => {
+          const nombre = item.getAttribute('data-nombre') ?? ''
+          const details = item.getAttribute('data-details') ?? ''
+          const match = !query || nombre.includes(query) || details.toLowerCase().includes(query)
+          item.style.display = match ? '' : 'none'
+        })
+        allSections.forEach((section) => {
+          const visible = Array.from(section.querySelectorAll<HTMLElement>('.menu-item')).some(
+            (el) => el.style.display !== 'none',
+          )
+          ;(section as HTMLElement).style.display = visible ? '' : 'none'
+        })
+      })
+
+      const fmtC = (n: number) =>
+        new Intl.NumberFormat('es-AR', {
+          style: 'currency',
+          currency: 'ARS',
+          maximumFractionDigits: 0,
+        }).format(n)
+
+      function renderIntensityDots(intensity: number): string {
+        const max = 5
+        const filled = Math.min(Math.max(Math.round(intensity), 0), max)
+        return Array.from({ length: max }, (_, i) =>
+          i < filled
+            ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:black;"></span>`
+            : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid rgba(0,0,0,0.2);"></span>`,
+        ).join('')
+      }
+
+      function buildModalContent(data: any): string {
+        const details = data.details ?? {}
+        const notes: string[] = Array.isArray(details.notes) ? details.notes : []
+        const hasNotes = notes.length > 0
+        const finalPrice = data.finalPrice ?? data.price
+        const hasOffer = data.in_offer && data.offer_percent
+
+        const detailRows = [
+          details.grams ? { label: 'Gramaje', value: details.grams } : null,
+          details.bitterness ? { label: 'Amargor', value: details.bitterness } : null,
+          details.sugar ? { label: 'Azúcar', value: details.sugar } : null,
+        ].filter(Boolean) as { label: string; value: string }[]
+
+        if (isMin) {
+          return `
+        <div>
+          <h3 style="font-size:1.25rem;font-weight:700;color:black;line-height:1.2;margin:0 0 8px;">${data.name}</h3>
+          ${data.description ? `<p style="font-size:0.875rem;color:rgba(0,0,0,0.5);line-height:1.6;margin:0;">${data.description}</p>` : ''}
+        </div>
+        <div style="margin-top:1.5rem;border-top:1px solid rgba(0,0,0,0.08);">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid rgba(0,0,0,0.08);">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">Precio</span>
+            <div style="text-align:right;">
+              <span style="font-size:1.4rem;font-weight:700;color:black;">${fmtC(finalPrice)}</span>
+              ${hasOffer ? `<span style="display:block;font-size:0.75rem;color:rgba(0,0,0,0.3);text-decoration:line-through;">${fmtC(data.price)}</span>` : ''}
+            </div>
+          </div>
+          ${
+            data.intensity
+              ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid rgba(0,0,0,0.08);">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">Intensidad</span>
+            <div style="display:flex;gap:4px;align-items:center;">${renderIntensityDots(data.intensity)}</div>
+          </div>`
+              : ''
+          }
+          ${detailRows
+            .map(
+              (row) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid rgba(0,0,0,0.08);">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">${row.label}</span>
+            <span style="font-size:0.875rem;font-weight:700;color:black;">${row.value}</span>
+          </div>`,
+            )
+            .join('')}
+          ${
+            hasNotes
+              ? `
+          <div style="padding:1rem 0;">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);display:block;margin-bottom:10px;">Notas</span>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              ${notes.map((n) => `<span style="padding:4px 12px;border:1px solid rgba(0,0,0,0.15);font-size:11px;font-weight:700;letter-spacing:0.1em;color:rgba(0,0,0,0.6);">${n}</span>`).join('')}
+            </div>
+          </div>`
+              : ''
+          }
+        </div>
+      `
+        } else {
+          return `
+        <div>
+          <h3 style="font-size:1.25rem;font-weight:700;font-style:italic;color:var(--clr-ink);line-height:1.2;margin:0 0 8px;">${data.name}</h3>
+          ${data.description ? `<p style="font-size:0.875rem;color:rgba(0,0,0,0.5);line-height:1.6;margin:0;">${data.description}</p>` : ''}
+        </div>
+        <div style="margin-top:1.5rem;background:white;border-radius:16px;border:1px solid rgba(0,0,0,0.08);overflow:hidden;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(0,0,0,0.06);">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">Precio</span>
+            <div style="text-align:right;">
+              <span style="font-size:1.4rem;font-weight:900;color:var(--clr-accent);">${fmtC(finalPrice)}</span>
+              ${hasOffer ? `<span style="display:block;font-size:0.75rem;color:rgba(0,0,0,0.3);text-decoration:line-through;">${fmtC(data.price)}</span>` : ''}
+            </div>
+          </div>
+          ${
+            data.intensity
+              ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(0,0,0,0.06);">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">Intensidad</span>
+            <div style="display:flex;gap:5px;align-items:center;">${renderIntensityDots(data.intensity)}</div>
+          </div>`
+              : ''
+          }
+          ${detailRows
+            .map(
+              (row) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(0,0,0,0.06);">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">${row.label}</span>
+            <span style="font-size:0.875rem;font-weight:700;color:var(--clr-ink);">${row.value}</span>
+          </div>`,
+            )
+            .join('')}
+        </div>
+        ${
+          hasNotes
+            ? `
+        <div style="margin-top:1rem;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);display:block;margin-bottom:10px;">Notas</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${notes.map((n) => `<span style="padding:5px 12px;border-radius:999px;border:1px solid rgba(0,0,0,0.15);font-size:11px;font-weight:700;color:rgba(0,0,0,0.6);">${n}</span>`).join('')}
+          </div>
+        </div>`
+            : ''
+        }
+      `
+        }
+      }
+
+      let mobileSheet: HTMLElement | null = null
+
+      function openMobileSheet(data: any) {
+        if (mobileSheet) {
+          mobileSheet.remove()
+          mobileSheet = null
+        }
+
+        const overlay = document.createElement('div')
+        overlay.style.cssText = `
+      position:fixed;inset:0;z-index:9999;
+      background:rgba(0,0,0,0.5);
+      display:flex;align-items:flex-end;
+    `
+
+        const sheet = document.createElement('div')
+        sheet.style.cssText = `
+      width:100%;
+      max-height:90dvh;
+      background:${isMin ? '#fff' : 'var(--clr-bg,#F5EFE6)'};
+      border-radius:${isMin ? '0' : '1.25rem 1.25rem 0 0'};
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      transform:translateY(100%);
+      transition:transform 0.35s cubic-bezier(0.22,1,0.36,1);
+    `
+
+        const imgSrc = data.image || data.image_url || ''
+        const offerBadge =
+          data.in_offer && data.offer_percent
+            ? `<span style="position:absolute;top:12px;left:12px;background:black;color:white;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:4px 10px;">-${data.offer_percent}%</span>`
+            : ''
+
+        sheet.innerHTML = `
+      <div style="flex-shrink:0;position:relative;height:200px;background:#e0e0e0;overflow:hidden;">
+        <img src="${imgSrc}" alt="" style="width:100%;height:100%;object-fit:cover;" />
+        ${offerBadge}
+        <button data-close style="
+          position:absolute;top:12px;right:12px;
+          width:36px;height:36px;border-radius:50%;
+          background:rgba(0,0,0,0.45);border:none;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+        " aria-label="Cerrar">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 1L11 11M11 1L1 11" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:1.5rem;-webkit-overflow-scrolling:touch;">
+        ${buildModalContent(data)}
+      </div>
+    `
+
+        overlay.appendChild(sheet)
+        document.body.appendChild(overlay)
+        document.body.style.overflow = 'hidden'
+        mobileSheet = overlay
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            sheet.style.transform = 'translateY(0)'
+          })
+        })
+
+        const closeSheet = () => {
+          sheet.style.transform = 'translateY(100%)'
+          setTimeout(() => {
+            overlay.remove()
+            document.body.style.overflow = ''
+            mobileSheet = null
+          }, 350)
+        }
+
+        sheet.addEventListener('click', (e) => {
+          if ((e.target as Element).closest('[data-close]')) closeSheet()
+        })
+
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) closeSheet()
+        })
+      }
+
+      function openDesktopModal(data: any) {
+        const modalContent = document.getElementById('modal-content')
+        const modalImageContainer = document.getElementById('modal-image-container')
+        if (!modal || !modalContent || !modalImageContainer) return
+
+        modalContent.innerHTML = buildModalContent(data)
+
+        const img = document.createElement('img')
+        img.src = data.image || data.image_url || ''
+        img.className = 'w-full h-full object-cover'
+        modalImageContainer.innerHTML = ''
+        modalImageContainer.appendChild(img)
+        modal.showModal()
+      }
+
+      function openItem(data: any) {
+        if (window.innerWidth < 768) {
+          openMobileSheet(data)
+        } else {
+          openDesktopModal(data)
+        }
+      }
+
+      document.querySelectorAll('.menu-item').forEach((i) => {
+        i.addEventListener('click', () => {
+          try {
+            openItem(JSON.parse(i.getAttribute('data-details') || '{}'))
+          } catch {}
+        })
+      })
+
+      document.getElementById('close-modal')?.addEventListener('click', () => modal?.close())
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (mobileSheet) {
+            mobileSheet.querySelector<HTMLElement>('[data-close]')?.click()
+          }
+        }
+      })
+    }
+
+    initMenu()
+    document.addEventListener('astro:after-swap', initMenu)
+  </script>
+</Layout>

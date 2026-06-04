@@ -1,0 +1,148 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout
+  title="Cuenta Suspendida | Essenz"
+  description="El acceso a tu panel de administración ha sido pausado temporalmente."
+>
+  <main
+    class="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-6 py-24 overflow-hidden"
+    style="background-color: var(--clr-bg);"
+  >
+    <div
+      class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+      style="opacity: 0.02;"
+    >
+      <span
+        class="text-[35vw] font-bold leading-none select-none uppercase"
+        style="font-family: var(--font-display); color: var(--clr-ink);"
+      >
+        PAUSED
+      </span>
+    </div>
+
+    <div class="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
+      <div
+        class="relative w-40 h-40 md:w-48 md:h-48 mb-10 group transition-transform duration-300 hover:-translate-y-1"
+      >
+        <div
+          class="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 opacity-30 group-hover:opacity-60 transition-opacity duration-500"
+        >
+          <svg
+            class="w-3 h-6 text-(--clr-accent) animate-pulse"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"><path d="M12 3c-1 2-4 3-4 6s3 4 2 7"></path></svg
+          >
+          <svg
+            class="w-3 h-6 text-(--clr-ink) animate-pulse"
+            style="animation-delay: 200ms;"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"><path d="M12 3c-1 2-4 3-4 6s3 4 2 7"></path></svg
+          >
+        </div>
+
+        <svg
+          viewBox="0 0 120 120"
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-full h-full drop-shadow-xl"
+          style="color: var(--clr-ink-dark);"
+        >
+          <path
+            d="M 85 45 C 112 45, 112 75, 85 75"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="10"
+            stroke-linecap="round"></path>
+
+          <path d="M 25 30 L 95 30 L 85 90 C 83 102, 37 102, 35 90 Z" fill="currentColor"></path>
+
+          <path d="M 27 45 L 93 45" stroke="var(--clr-bg)" stroke-width="3"></path>
+
+          <path
+            d="M 48 72 L 48 60 C 48 50, 72 50, 72 60 L 72 72"
+            fill="none"
+            stroke="var(--clr-accent-light)"
+            stroke-width="4"
+            stroke-linecap="round"></path>
+          <rect x="42" y="68" width="36" height="26" rx="4" fill="var(--clr-accent)"></rect>
+          <circle cx="60" cy="78" r="3" fill="var(--clr-bg)"></circle>
+          <path d="M 60 79 L 60 86" stroke="var(--clr-bg)" stroke-width="2" stroke-linecap="round"
+          ></path>
+
+          <circle cx="20" cy="85" r="2" fill="var(--clr-accent-light)" opacity="0.4"></circle>
+          <circle cx="102" cy="35" r="3" fill="var(--clr-accent)" opacity="0.3"></circle>
+        </svg>
+      </div>
+
+      <h1
+        class="text-4xl md:text-5xl font-bold mb-4 tracking-tight"
+        style="color: var(--clr-ink-dark); font-family: var(--font-display);"
+      >
+        Servicio pausado
+      </h1>
+
+      <p
+        class="text-base md:text-lg mb-4 max-w-lg leading-relaxed mx-auto"
+        style="color: var(--clr-ink); font-family: var(--font-body);"
+      >
+        No pudimos procesar el pago de la suscripción mensual de tu menú digital. El acceso a la
+        plataforma administrativa se encuentra suspendido de manera temporal.
+      </p>
+
+      <div
+        class="p-4 mb-10 text-sm max-w-md mx-auto text-left border border-dashed rounded-(--radius-card)"
+        style="background-color: color-mix(in srgb, var(--clr-accent) 5%, transparent); border-color: color-mix(in srgb, var(--clr-ink) 20%, transparent); font-family: var(--font-ui);"
+      >
+        <p style="color: var(--clr-ink-dark); font-weight: 500; margin-bottom: 4px;">
+          ⚠️ Política de resguardo de datos:
+        </p>
+        <p style="color: var(--clr-ink); opacity: 0.85; font-size: 0.85rem;">
+          Mantenemos tus menús, configuraciones y QR intactos por un periodo de **14 días**. Luego
+          de este plazo, el sistema iniciará una depuración automática eliminando imágenes y
+          registros permanentemente para liberar espacio en nuestros servidores.
+        </p>
+      </div>
+
+      <div
+        class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full font-['Inter']"
+      >
+        <a
+          href="/dashboard/billing"
+          class="group inline-flex items-center justify-center gap-3 px-8 py-4 text-white text-xs tracking-[0.2em] uppercase transition-all duration-300 w-full sm:w-auto"
+          style="background-color: var(--clr-accent); border-radius: var(--radius-btn);"
+          onmouseover="this.style.backgroundColor='var(--clr-green)'"
+          onmouseout="this.style.backgroundColor='var(--clr-accent)'"
+        >
+          <span>Regularizar pago</span>
+          <svg
+            class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 12h14"></path>
+            <path d="m12 5 7 7-7 7"></path>
+          </svg>
+        </a>
+
+        <a
+          href="mailto:soporte@bytesyncs.com?subject=Suscripcion%20Essenz%20Pausada"
+          class="inline-flex items-center justify-center px-8 py-4 text-xs tracking-[0.2em] uppercase transition-all duration-300 w-full sm:w-auto border"
+          style="color: var(--clr-ink); border-color: color-mix(in srgb, var(--clr-ink) 30%, transparent); background-color: transparent; border-radius: var(--radius-btn);"
+          onmouseover="this.style.backgroundColor='color-mix(in srgb, var(--clr-ink) 5%, transparent)'"
+          onmouseout="this.style.backgroundColor='transparent'"
+        >
+          Contactar soporte
+        </a>
+      </div>
+    </div>
+  </main>
+</Layout>

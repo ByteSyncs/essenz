@@ -1,0 +1,78 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import SetupWizard from '../../../components/react/SetupWizard'
+import logoEssenz from '../../../assets/essenz.webp'
+import { Image } from 'astro:assets'
+
+const { slug } = Astro.params
+const url = Astro.url.host
+const { supabase, user } = Astro.locals
+
+if (!user) {
+  return Astro.redirect('/auth/sign-in')
+}
+
+const { data: profile } = await supabase
+  .from('profiles')
+  .select(
+    `
+       is_setup_complete,
+       organization_id,
+       organizations (
+        name,
+        slug,
+        subscriptions(
+          plan_type,
+          status
+        )
+     )
+   `,
+  )
+  .eq('id', user.id)
+  .single()
+
+const org = Array.isArray(profile?.organizations)
+  ? profile.organizations[0]
+  : profile?.organizations
+
+if (!org || org.slug !== slug) {
+  return Astro.redirect('/?error=unauthorized')
+}
+
+if (profile?.is_setup_complete) {
+  return Astro.redirect(`/${slug}/admin/dashboard`)
+}
+
+const sub = Array.isArray(org?.subscriptions) ? org.subscriptions[0] : org?.subscriptions
+
+if (sub?.status !== 'active') return Astro.redirect('/')
+
+const planType = sub?.plan_type
+---
+
+<Layout
+  title="Configuración Inicial | Essenz"
+  description="Personaliza tu cafetería y lanza tu menú digital."
+>
+  <main class="min-h-screen bg-(--clr-bg) py-20 px-5 font-body">
+    <div class="max-w-4xl mx-auto flex flex-col items-center mb-12">
+      <Image
+        src={logoEssenz}
+        alt="Essenz Logo"
+        width={180}
+        height={60}
+        class="object-contain mb-2"
+      />
+    </div>
+
+    <SetupWizard
+      client:load
+      urlHost={url!}
+      slug={slug!}
+      userId={user.id}
+      name={org?.name}
+      organizationId={profile?.organization_id}
+      planType={planType}
+    />
+  </main>
+</Layout>

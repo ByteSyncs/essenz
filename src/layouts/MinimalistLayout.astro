@@ -1,0 +1,39 @@
+---
+import '../styles/global.css'
+
+interface Props {
+  title: string
+  description: string
+  preloadImage?: string
+}
+
+const { title, description, preloadImage } = Astro.props
+---
+
+<!doctype html>
+<html lang="es" class="scroll-smooth theme-minimalist">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+
+    <link rel="preconnect" href="https://nvyrimqgpncwryvlhhic.supabase.co" crossorigin />
+
+    {preloadImage && <link rel="preload" as="image" href={preloadImage} fetchpriority="high" />}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    class="bg-(--clr-bg) text-(--clr-ink) font-[--font-body) antialiased overflow-x-hidden"
+    style="font-family: var(--font-body);"
+  >
+    <slot />
+  </body>
+</html>

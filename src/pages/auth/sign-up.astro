@@ -1,0 +1,294 @@
+---
+import AuthLayout from '../../layouts/AuthLayout.astro'
+import { getPlanMeta } from '../../libs/register'
+
+const planParam = Astro.url.searchParams.get('plan')
+const plan = getPlanMeta(planParam)
+---
+
+<AuthLayout
+  title={`Crear cuenta — Essenz`}
+  description="Comenzá a digitalizar tu cafetería hoy. Creá tu cuenta en Essenz y empezá a crecer."
+>
+  <div class="min-h-screen relative flex items-center justify-center overflow-hidden">
+    <div class="fixed inset-0 pointer-events-none z-0 opacity-[0.025] bg-noise"></div>
+
+    <main class="relative z-10 w-full max-w-120 px-6 py-20 lg:py-24">
+      <div class="animate-fade-up">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1.5 mb-6 border border-(--clr-accent)/20 bg-(--clr-accent)/10 shadow-[0_2px_10px_-3px_rgba(var(--clr-accent),0.1)]"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-(--clr-accent) inline-block animate-pulse"
+          ></span>
+          <span
+            class="font-family-name:--font-ui text-[0.72rem] text-(--clr-accent) font-medium tracking-widest uppercase"
+          >
+            {plan.name} · {plan.price ? `$${plan.price}` : 'Consultar'}
+          </span>
+        </div>
+
+        <h1
+          class="font-family-name:--font-display text-[clamp(2rem,5vw,2.5rem)] leading-[1.1] text-(--clr-ink-dark) mb-4 tracking-tight"
+        >
+          No es un gasto.<br /><em>Es tu próxima inversión.</em>
+        </h1>
+        <p
+          class="font-family-name:--font-body text-[1rem] leading-relaxed text-(--clr-ink)/60 mb-10 max-w-100"
+        >
+          Creá tu cuenta y empezá hoy mismo.
+        </p>
+
+        <form id="register-form" novalidate class="flex flex-col gap-4" autocomplete="on">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-up animate-delay-100">
+            <div class="flex flex-col gap-1.5">
+              <label
+                for="ownerName"
+                class="font-family-name:--font-ui text-[0.72rem] font-medium uppercase tracking-[0.06em] text-(--clr-ink)/50"
+                >Tu nombre</label
+              >
+              <input
+                type="text"
+                id="ownerName"
+                name="ownerName"
+                placeholder="Ezequiel Saucedo"
+                required
+                class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+              />
+              <span
+                id="err-ownerName"
+                class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
+                >Campo requerido</span
+              >
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label
+                for="businessName"
+                class="font-family-name:--font-ui text-[0.72rem] font-medium uppercase tracking-[0.06em] text-(--clr-ink)/50"
+                >Tu cafeteria</label
+              >
+              <input
+                type="text"
+                id="businessName"
+                name="businessName"
+                placeholder="Café del Centro"
+                required
+                class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+              />
+              <span
+                id="err-businessName"
+                class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
+                >Campo requerido</span
+              >
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5 animate-fade-up animate-delay-200">
+            <label
+              for="email"
+              class="font-family-name:--font-ui text-[0.72rem] font-medium uppercase tracking-[0.06em] text-(--clr-ink)/50"
+              >Email</label
+            >
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="hola@tucafe.com"
+              autocomplete="email"
+              required
+              class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+            />
+            <span id="err-email" class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
+              >Email inválido</span
+            >
+          </div>
+
+          <div class="flex flex-col gap-1.5 animate-fade-up animate-delay-300">
+            <label
+              for="password"
+              class="font-family-name:--font-ui text-[0.72rem] font-medium uppercase tracking-[0.06em] text-(--clr-ink)/50"
+              >Contraseña</label
+            >
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Mínimo 8 caracteres"
+              required
+              class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+            />
+            <span id="err-password" class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
+              >Contraseña demasiado corta</span
+            >
+          </div>
+
+          <div
+            id="global-error"
+            class="hidden px-4 py-3 text-sm text-red-600 bg-red-50 border border-red-100 mt-2"
+          >
+          </div>
+
+          <button
+            type="submit"
+            id="submit-btn"
+            class="w-full bg-(--clr-ink-dark) text-(--clr-bg) py-4 font-bold uppercase tracking-widest hover:bg-(--clr-accent) transition-colors duration-300 mt-2 active:scale-[0.98]"
+          >
+            <span id="btn-text">Crear mi cuenta</span>
+          </button>
+
+          <input type="hidden" id="plan-input" name="plan" value={plan.id} />
+        </form>
+
+        <p class="mt-10 text-center text-[0.8rem] text-(--clr-ink)/40 font-family-name:--font-body">
+          ¿Ya tenés cuenta? <a
+            href="/auth/sign-in"
+            class="text-(--clr-ink-dark) font-bold underline underline-offset-4 decoration-(--clr-accent)/30 hover:decoration-(--clr-accent) transition-colors"
+            >Iniciá sesión</a
+          >
+        </p>
+      </div>
+    </main>
+  </div>
+</AuthLayout>
+
+<style>
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+</style>
+
+<script>
+  import {
+    evaluatePasswordStrength,
+    validateRegisterForm,
+    submitRegister,
+    getPlanMeta,
+  } from '../../libs/register'
+  import { errorMessages } from '../../libs/errorMessages'
+
+  const showError = (id: string, show: boolean) => {
+    const el = document.getElementById(`err-${id}`)
+    if (el) el.classList.toggle('hidden', !show)
+  }
+
+  const setLoading = (loading: boolean) => {
+    const btn = document.getElementById('submit-btn') as HTMLButtonElement
+    const text = document.getElementById('btn-text')
+
+    if (btn && text) {
+      btn.disabled = loading
+      text.textContent = loading ? 'Procesando...' : 'Crear mi cuenta'
+      btn.style.opacity = loading ? '0.7' : '1'
+    }
+  }
+
+  const passwordInput = document.getElementById('password') as HTMLInputElement
+
+  passwordInput?.addEventListener('input', () => {
+    evaluatePasswordStrength(passwordInput.value)
+  })
+
+  const form = document.getElementById('register-form') as HTMLFormElement
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+
+    document.querySelectorAll('[id^="err-"]').forEach((el) => el.classList.add('hidden'))
+
+    const globalError = document.getElementById('global-error')
+
+    if (globalError) {
+      globalError.classList.add('hidden')
+      globalError.textContent = ''
+    }
+
+    const formData = new FormData(form)
+    const entry = Object.fromEntries(formData.entries())
+
+    const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement)?.value
+
+    const planId = entry.plan as string
+
+    const data = {
+      client_name: entry.ownerName as string,
+      company_name: entry.businessName as string,
+      email: entry.email as string,
+      password: entry.password as string,
+      plan_id: getPlanMeta(planId).id,
+    }
+
+    const validationErrors = validateRegisterForm(data)
+    if (confirmPassword && data.password !== confirmPassword) {
+      validationErrors.confirmPassword = 'Las contraseñas no coinciden.'
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      Object.keys(validationErrors).forEach((key) => showError(key, true))
+
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const { ok, data: responseData } = await submitRegister(data)
+
+      if (!ok) {
+        if (globalError) {
+          if (responseData.errors) {
+            const errMsg = responseData.errors.map((e) => e.message)
+            globalError.textContent = errMsg.join(', ')
+            globalError.classList.remove('hidden')
+            return
+          }
+
+          const translatedError =
+            errorMessages[responseData.error as keyof typeof errorMessages] ||
+            'Error en el registro'
+
+          globalError.textContent = translatedError
+          globalError.classList.remove('hidden')
+        }
+
+        return
+      }
+
+      sessionStorage.setItem('pending_verification_email', data.email)
+      sessionStorage.setItem('pending_verification_plan', planId)
+      window.location.href = `/auth/verify-email`
+    } catch (err) {
+      if (globalError) {
+        globalError.textContent = 'Error de conexión. Intenta de nuevo.'
+
+        globalError.classList.remove('hidden')
+      }
+    } finally {
+      setLoading(false)
+    }
+  })
+</script>

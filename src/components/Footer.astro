@@ -1,0 +1,31 @@
+---
+const { theme, slug } = Astro.props
+const isMin = theme === 'minimalist'
+---
+
+{
+  !isMin ? (
+    <footer class="bg-(--clr-darker) border-t border-white/10 text-gray-500 py-8 text-center text-sm">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <p>© 2026 ByteSyncs. Todos los derechos reservados.</p>
+        <p class="flex items-center gap-2">
+          Identificador: <strong class="text-white">{slug}</strong>· Estilo:{' '}
+          <strong class="text-white">{theme}</strong>
+        </p>
+      </div>
+    </footer>
+  ) : (
+    <footer class="bg-black border-t border-white/6 py-6">
+      <div class="max-w-7xl mx-auto px-6 md:px-12 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <p class="text-[11px] text-white/30 tracking-wide">
+          © 2026 ByteSyncs. Todos los derechos reservados.
+        </p>
+        <div class="flex items-center gap-4 text-[11px] text-white/20 font-bold tracking-[0.2em] uppercase">
+          <span>{slug}</span>
+          <span class="w-1 h-1 bg-white/20 rounded-full" />
+          <span class="text-(--clr-accent)/60">{theme}</span>
+        </div>
+      </div>
+    </footer>
+  )
+}

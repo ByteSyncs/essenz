@@ -1,0 +1,236 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout
+  title="Essenz | Confirmación de correo electrónico"
+  description="Ingresá el código de 8 dígitos que enviamos a tu correo para validar tu cuenta."
+>
+  <div
+    class="min-h-screen flex items-center justify-center px-4"
+    style="background-color: var(--clr-bg);"
+  >
+    <div class="flex flex-col items-center gap-8 max-w-md w-full py-16">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 120 120"
+        width="120"
+        height="120"
+        fill="none"
+      >
+        <circle
+          cx="60"
+          cy="60"
+          r="56"
+          stroke="var(--clr-accent-light)"
+          stroke-width="1.5"
+          stroke-dasharray="6 4"></circle>
+        <ellipse cx="60" cy="78" rx="26" ry="5" fill="var(--clr-accent)" opacity="0.12"></ellipse>
+        <rect
+          x="34"
+          y="40"
+          width="52"
+          height="36"
+          rx="4"
+          fill="var(--clr-accent-light)"
+          opacity="0.18"></rect>
+        <rect
+          x="36"
+          y="42"
+          width="48"
+          height="32"
+          rx="3"
+          fill="var(--clr-bg)"
+          stroke="var(--clr-accent)"
+          stroke-width="1.5"></rect>
+        <path
+          d="M36 45 L60 62 L84 45"
+          stroke="var(--clr-accent)"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+        <path
+          d="M36 74 L50 60M84 74 L70 60"
+          stroke="var(--clr-accent)"
+          stroke-width="1"
+          stroke-linecap="round"
+          opacity="0.5"></path>
+        <path
+          d="M54 88 Q58 96 60 98 Q62 96 66 88"
+          stroke="var(--clr-accent)"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"></path>
+        <ellipse
+          cx="60"
+          cy="88"
+          rx="10"
+          ry="5"
+          fill="var(--clr-accent)"
+          opacity="0.15"
+          stroke="var(--clr-accent)"
+          stroke-width="1.2"></ellipse>
+        <circle cx="60" cy="88" r="3" fill="var(--clr-accent)" opacity="0.6"></circle>
+        <circle cx="44" cy="33" r="2" fill="var(--clr-accent-light)" opacity="0.7"></circle>
+        <circle cx="76" cy="29" r="1.5" fill="var(--clr-accent)" opacity="0.5"></circle>
+        <circle cx="88" cy="38" r="1" fill="var(--clr-accent-light)" opacity="0.6"></circle>
+      </svg>
+
+      <div class="flex flex-col items-center gap-4 text-center">
+        <span
+          class="text-xs uppercase tracking-[0.25em]"
+          style="color: var(--clr-accent); font-family: var(--font-ui);"
+        >
+          Essenz
+        </span>
+        <h1
+          class="text-3xl leading-tight"
+          style="color: var(--clr-ink-dark); font-family: var(--font-display);"
+        >
+          Ingresá tu código
+        </h1>
+        <p
+          class="text-base leading-relaxed"
+          style="color: var(--clr-ink); font-family: var(--font-body); opacity: 0.75;"
+        >
+          Te enviamos un código de 6 dígitos a tu correo. Ingresalo a continuación para activar tu
+          cuenta.
+        </p>
+      </div>
+
+      <form class="w-full flex flex-col gap-5 mt-2" id="verification-form">
+        <input type="hidden" id="email-hidden" name="email" />
+        <input type="hidden" id="plan-hidden" name="plan" />
+
+        <div class="relative">
+          <input
+            type="text"
+            id="otp-code"
+            name="code"
+            maxlength="6"
+            placeholder="000000"
+            autocomplete="one-time-code"
+            class="w-full text-center text-3xl tracking-[0.3em] py-4 outline-none transition-all duration-200"
+            style="
+              background-color: transparent; 
+              border: 1px solid color-mix(in srgb, var(--clr-accent) 30%, transparent); 
+              border-radius: var(--radius-card); 
+              color: var(--clr-ink-dark); 
+              font-family: var(--font-ui);
+            "
+            onfocus="this.style.borderColor='var(--clr-accent)'"
+            onblur="this.style.borderColor='color-mix(in srgb, var(--clr-accent) 30%, transparent)'"
+          />
+        </div>
+
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full py-3.5 flex items-center justify-center transition-all duration-200 hover:opacity-90"
+          style="
+            background-color: var(--clr-accent); 
+            color: var(--clr-bg); 
+            border-radius: var(--radius-card); 
+            font-family: var(--font-ui);
+            font-weight: 500;
+          "
+        >
+          Verificar cuenta
+        </button>
+      </form>
+
+      <div
+        class="w-full rounded-(--radius-card) px-6 py-5 flex flex-col items-center gap-1 text-center mt-2"
+        style="background-color: color-mix(in srgb, var(--clr-accent) 5%, transparent); border: 1px solid color-mix(in srgb, var(--clr-accent) 15%, transparent);"
+      >
+        <span
+          class="text-sm font-medium"
+          style="color: var(--clr-accent); font-family: var(--font-ui);"
+          >¿No recibiste el correo?</span
+        >
+        <span
+          class="text-sm"
+          style="color: var(--clr-ink); font-family: var(--font-body); opacity: 0.7;"
+          >Revisá la carpeta de spam o <button
+            type="button"
+            class="underline hover:opacity-80 transition-opacity"
+            style="color: var(--clr-accent);">solicitá uno nuevo</button
+          >.</span
+        >
+      </div>
+
+      <div
+        class="w-16 h-px mt-4"
+        style="background-color: color-mix(in srgb, var(--clr-accent) 30%, transparent);"
+      >
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const pendingEmail = sessionStorage.getItem('pending_verification_email')
+  const pendingPlan = sessionStorage.getItem('pending_verification_plan')
+
+  const emailInput = document.getElementById('email-hidden') as HTMLInputElement
+  const planInput = document.getElementById('plan-hidden') as HTMLInputElement
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement
+
+  if (emailInput && pendingEmail) emailInput.value = pendingEmail
+  if (planInput && pendingPlan) planInput.value = pendingPlan
+
+  const input = document.getElementById('otp-code') as HTMLInputElement
+  if (input) {
+    input.addEventListener('input', (e) => {
+      const target = e.target as HTMLInputElement
+      target.value = target.value.replace(/[^0-9]/g, '')
+    })
+  }
+
+  const form = document.getElementById('verification-form') as HTMLFormElement
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+
+      if (submitBtn) {
+        submitBtn.disabled = true
+        submitBtn.textContent = 'Verificando...'
+        submitBtn.style.opacity = '0.7'
+      }
+
+      const obj = {
+        code: input.value,
+        email: emailInput?.value || '',
+        plan: planInput?.value || '',
+      }
+
+      try {
+        const res = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(obj),
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || 'verification_failed')
+        }
+
+        if (data && data.url) {
+          window.location.href = data.url
+        }
+      } catch (error) {
+        console.error('Verification flow error:', error)
+
+        if (submitBtn) {
+          submitBtn.disabled = false
+          submitBtn.textContent = 'Verificar cuenta'
+          submitBtn.style.opacity = '1'
+        }
+      }
+    })
+  }
+</script>

@@ -1,0 +1,479 @@
+---
+import * as Sentry from '@sentry/node'
+import Layout from '../../../../layouts/Layout.astro'
+import { PLANS } from '../../../../constants/suscriptions'
+
+const { slug } = Astro.params
+const user = Astro.locals.user
+
+if (!user) {
+  return Astro.redirect('/?e=unauthorized')
+}
+
+const { data, error } = await Astro.locals.supabase
+  .from('profiles')
+  .select('organizations (name, slug)')
+  .eq('id', user.id)
+  .single()
+
+if (error) {
+  console.error('[PROFILE_FETCH_ERROR]', { userId: user.id, error })
+  Sentry.captureException(error, {
+    tags: { section: 'profile_fetch' },
+    extra: { userId: user.id },
+  })
+  return
+}
+
+const org = Array.isArray(data.organizations) ? data.organizations[0] : data.organizations
+
+if (!org || org.slug !== slug) {
+  return Astro.redirect('/?e=unauthorized')
+}
+
+const u = {
+  email: user.email,
+  cn: org.name,
+}
+
+const selectablePlans = Object.values(PLANS).filter((p) => p.id !== 'custom')
+---
+
+<Layout title="Renueva tu plan" description="No pierdas tu ventaja ante la competencia">
+  <main class="min-h-screen bg-[--clr-bg] flex items-center justify-center px-4 py-16">
+    <div class="w-full max-w-2xl">
+      <div class="mb-10 text-center">
+        <span
+          class="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-[--clr-accent] mb-3 opacity-80"
+        >
+          Suscripción
+        </span>
+        <h1
+          class="text-4xl md:text-5xl text-[--clr-ink-dark] leading-tight mb-2"
+          style="font-family: var(--font-display);"
+        >
+          Renová tu plan
+        </h1>
+        <p class="text-[--clr-ink] opacity-60 text-sm" style="font-family: var(--font-body);">
+          Elegí el plan que mejor se adapta a tu negocio
+        </p>
+      </div>
+
+      <div
+        class="bg-white border border-[color-mix(in_srgb,var(--clr-ink)_8%,transparent)] rounded-[--radius-card] overflow-hidden shadow-sm"
+      >
+        <div
+          class="px-7 pt-7 pb-6 border-b border-[color-mix(in_srgb,var(--clr-ink)_8%,transparent)]"
+        >
+          <p
+            class="text-[0.65rem] font-semibold tracking-widest uppercase text-[--clr-accent] mb-3 opacity-70"
+          >
+            Tus datos
+          </p>
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center gap-2">
+              <svg
+                class="w-4 h-4 text-[--clr-accent] opacity-70 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"
+                ></path>
+              </svg>
+              <span
+                class="text-[--clr-ink-dark] font-semibold text-sm"
+                style="font-family: var(--font-ui);"
+              >
+                {u.cn ?? '—'}
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg
+                class="w-4 h-4 text-[--clr-accent] opacity-70 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 6.75L2.25 6.75"
+                ></path>
+              </svg>
+              <span
+                class="text-[--clr-ink] opacity-70 text-sm"
+                style="font-family: var(--font-body);"
+              >
+                {u.email ?? '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form id="billing-form" class="px-7 py-7" method="POST">
+          <input type="hidden" name="email" value={u.email ?? ''} />
+          <input type="hidden" name="cafe" value={u.cn ?? ''} />
+          <input type="hidden" name="plan_id" id="selected-plan-id" value="" />
+
+          <p
+            class="text-[0.65rem] font-semibold tracking-widest uppercase text-[--clr-accent] mb-4 opacity-70"
+          >
+            Elegí tu plan
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8" id="plan-cards">
+            {
+              selectablePlans.map((plan) => (
+                <button
+                  type="button"
+                  data-plan-id={plan.id}
+                  data-plan-name={plan.name}
+                  class:list={[
+                    'plan-card group relative text-left w-full rounded-[--radius-card] border-2 px-5 py-5 transition-all duration-200 cursor-pointer',
+                    'border-[color-mix(in_srgb,var(--clr-ink)_12%,transparent)]',
+                    'hover:border-[--clr-accent] hover:shadow-md',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-[--clr-accent]',
+                  ]}
+                  aria-pressed="false"
+                >
+                  <span class="plan-check absolute top-3.5 right-3.5 w-5 h-5 rounded-full border-2 border-[color-mix(in_srgb,var(--clr-ink)_20%,transparent)] flex items-center justify-center transition-all duration-200">
+                    <svg
+                      class="w-2.5 h-2.5 text-white opacity-0 scale-0 transition-all duration-150 plan-check-icon"
+                      fill="currentColor"
+                      viewBox="0 0 12 12"
+                    >
+                      <path
+                        d="M10 3L5 8.5 2 5.5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        fill="none"
+                      />
+                    </svg>
+                  </span>
+
+                  <p
+                    class="text-[--clr-ink-dark] font-semibold text-base mb-1 pr-7"
+                    style="font-family: var(--font-display);"
+                  >
+                    {plan.name}
+                  </p>
+
+                  <p
+                    class="text-[--clr-accent] font-bold text-2xl mb-3"
+                    style="font-family: var(--font-ui);"
+                  >
+                    {plan.price != null ? `$${plan.price} ${plan.currency}` : 'A consultar'}
+                    {plan.price != null && (
+                      <span class="text-xs font-normal text-[--clr-ink] opacity-40 ml-1">/mes</span>
+                    )}
+                  </p>
+
+                  <ul class="flex flex-col gap-1.5">
+                    {plan.features.map((f) => (
+                      <li
+                        class="flex items-center gap-2 text-xs text-[--clr-ink] opacity-60"
+                        style="font-family: var(--font-body);"
+                      >
+                        <svg
+                          class="w-3 h-3 text-[--clr-green] shrink-0"
+                          fill="none"
+                          viewBox="0 0 12 12"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2 6l3 3 5-5" />
+                        </svg>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </button>
+              ))
+            }
+          </div>
+
+          <input type="hidden" name="payment_method" id="selected-payment-method" value="mp" />
+
+          <p
+            class="text-[0.65rem] font-semibold tracking-widest uppercase text-[--clr-accent] mb-4 opacity-70"
+          >
+            Método de pago
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+            <button
+              type="button"
+              id="pm-mercadopago"
+              data-pm="mp"
+              class="payment-method-card relative text-left w-full rounded-[--radius-card] border-2 px-5 py-4 transition-all duration-200 cursor-pointer border-[--clr-accent] bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)] shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[--clr-accent]"
+              aria-pressed="true"
+            >
+              <span
+                class="pm-check absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 bg-[--clr-accent] border-[--clr-accent]"
+              >
+                <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 12 12">
+                  <path
+                    d="M10 3L5 8.5 2 5.5"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"></path>
+                </svg>
+              </span>
+              <div class="flex items-center gap-2.5 pr-7">
+                <svg
+                  class="w-7 h-7 shrink-0"
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle cx="24" cy="24" r="24" fill="#009EE3"></circle>
+                  <path
+                    d="M8 24C8 24 14 13 24 13C34 13 40 24 40 24C40 24 34 35 24 35C14 35 8 24 8 24Z"
+                    fill="white"></path>
+                  <circle cx="24" cy="24" r="6" fill="#009EE3"></circle>
+                </svg>
+                <div>
+                  <p
+                    class="text-[--clr-ink-dark] font-semibold text-sm leading-tight"
+                    style="font-family: var(--font-ui);"
+                  >
+                    MercadoPago
+                  </p>
+                  <p
+                    class="text-[--clr-ink] opacity-50 text-xs mt-0.5"
+                    style="font-family: var(--font-body);"
+                  >
+                    Tarjetas, débito y saldo MP
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <div
+              class="relative text-left w-full rounded-[--radius-card] border-2 px-5 py-4 border-[color-mix(in_srgb,var(--clr-ink)_8%,transparent)] bg-[color-mix(in_srgb,var(--clr-ink)_2%,transparent)] opacity-60 cursor-not-allowed select-none"
+              aria-disabled="true"
+            >
+              <span
+                class="absolute top-3 right-3 text-[0.6rem] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--clr-accent)_12%,transparent)] text-[--clr-accent]"
+                style="font-family: var(--font-ui);"
+              >
+                Próximamente
+              </span>
+              <div class="flex items-center gap-2.5 pr-24">
+                <svg
+                  class="w-7 h-7 shrink-0"
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="48" height="48" rx="8" fill="#635BFF"></rect>
+                  <path
+                    d="M22.5 19.5c0-1.1.9-1.5 2.3-1.5 2.1 0 4.7.6 6.7 1.7v-6.3c-2.2-.9-4.5-1.2-6.7-1.2-5.5 0-9.1 2.9-9.1 7.6 0 7.4 10.2 6.2 10.2 9.4 0 1.3-1.1 1.7-2.6 1.7-2.3 0-5.2-.9-7.5-2.2v6.4c2.5 1.1 5.1 1.6 7.5 1.6 5.7 0 9.5-2.8 9.5-7.6-.1-8-10.3-6.6-10.3-9.6z"
+                    fill="white"></path>
+                </svg>
+                <div>
+                  <p
+                    class="text-[--clr-ink-dark] font-semibold text-sm leading-tight"
+                    style="font-family: var(--font-ui);"
+                  >
+                    Tarjeta internacional
+                  </p>
+                  <p
+                    class="text-[--clr-ink] opacity-50 text-xs mt-0.5"
+                    style="font-family: var(--font-body);"
+                  >
+                    Visa, Mastercard, Amex
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            id="plan-summary"
+            class="hidden mb-6 px-4 py-3.5 rounded-[--radius-card] bg-[color-mix(in_srgb,var(--clr-accent)_6%,transparent)] border border-[color-mix(in_srgb,var(--clr-accent)_20%,transparent)]"
+          >
+            <p
+              class="text-xs text-[--clr-ink] opacity-60 mb-0.5"
+              style="font-family: var(--font-body);"
+            >
+              Plan seleccionado
+            </p>
+            <p
+              id="plan-summary-name"
+              class="text-[--clr-ink-dark] font-semibold text-sm"
+              style="font-family: var(--font-ui);"
+            >
+              —
+            </p>
+          </div>
+
+          <p
+            id="plan-error"
+            class="hidden text-xs text-red-500 mb-3 text-center"
+            style="font-family: var(--font-body);"
+          >
+            Por favor, elegí un plan para continuar.
+          </p>
+
+          <button
+            type="submit"
+            id="submit-btn"
+            class="w-full py-4 px-6 text-sm font-semibold tracking-wide uppercase transition-all duration-200 cursor-pointer bg-[--clr-ink-dark] text-[--clr-white] hover:bg-[--clr-accent] rounded-[--radius-btn] focus:outline-none focus-visible:ring-2 focus-visible:ring-[--clr-accent] focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            style="font-family: var(--font-ui); letter-spacing: 0.08em;"
+          >
+            Continuar al pago
+            <svg
+              class="inline-block w-4 h-4 ml-2 -mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path>
+            </svg>
+          </button>
+
+          <p
+            class="text-center text-[0.65rem] text-[--clr-ink] opacity-40 mt-4"
+            style="font-family: var(--font-body);"
+          >
+            Serás redirigido a MercadoPago para completar el pago de forma segura.
+          </p>
+        </form>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import * as Sentry from '@sentry/astro'
+
+  const paymentCards = document.querySelectorAll<HTMLButtonElement>('.payment-method-card')
+  const selectedPaymentInput = document.getElementById(
+    'selected-payment-method',
+  ) as HTMLInputElement
+
+  paymentCards.forEach((pm) => {
+    pm.addEventListener('click', () => {
+      paymentCards.forEach((p) => {
+        p.classList.remove(
+          'border-[--clr-accent]',
+          'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
+          'shadow-md',
+        )
+        p.setAttribute('aria-pressed', 'false')
+        const check = p.querySelector('.pm-check') as HTMLElement
+        if (check) {
+          check.classList.remove('bg-[--clr-accent]', 'border-[--clr-accent]')
+          check.classList.add('border-[color-mix(in_srgb,var(--clr-ink)_20%,transparent)]')
+        }
+      })
+      pm.classList.add(
+        'border-[--clr-accent]',
+        'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
+        'shadow-md',
+      )
+      pm.setAttribute('aria-pressed', 'true')
+      const check = pm.querySelector('.pm-check') as HTMLElement
+      if (check) {
+        check.classList.add('bg-[--clr-accent]', 'border-[--clr-accent]')
+        check.classList.remove('border-[color-mix(in_srgb,var(--clr-ink)_20%,transparent)]')
+      }
+      selectedPaymentInput.value = pm.dataset.pm ?? 'mercadopago'
+    })
+  })
+
+  const cards = document.querySelectorAll<HTMLButtonElement>('.plan-card')
+  const selectedPlanInput = document.getElementById('selected-plan-id') as HTMLInputElement
+  const planSummary = document.getElementById('plan-summary')!
+  const planSummaryName = document.getElementById('plan-summary-name')!
+  const planError = document.getElementById('plan-error')!
+  const form = document.getElementById('billing-form') as HTMLFormElement
+
+  function selectCard(card: HTMLButtonElement) {
+    cards.forEach((c) => {
+      c.classList.remove(
+        'border-[--clr-accent]',
+        'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
+        'shadow-md',
+      )
+      c.setAttribute('aria-pressed', 'false')
+      const check = c.querySelector('.plan-check') as HTMLElement
+      const checkIcon = c.querySelector('.plan-check-icon') as HTMLElement
+      check.classList.remove('bg-[--clr-accent]', 'border-[--clr-accent]')
+      checkIcon.classList.add('opacity-0', 'scale-0')
+      checkIcon.classList.remove('opacity-100', 'scale-100')
+    })
+
+    card.classList.add(
+      'border-[--clr-accent]',
+      'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
+      'shadow-md',
+    )
+    card.setAttribute('aria-pressed', 'true')
+    const check = card.querySelector('.plan-check') as HTMLElement
+    const checkIcon = card.querySelector('.plan-check-icon') as HTMLElement
+    check.classList.add('bg-[--clr-accent]', 'border-[--clr-accent]')
+    checkIcon.classList.remove('opacity-0', 'scale-0')
+    checkIcon.classList.add('opacity-100', 'scale-100')
+
+    const planId = card.dataset.planId ?? ''
+    const planName = card.dataset.planName ?? ''
+    selectedPlanInput.value = planId
+    planSummaryName.textContent = planName
+    planSummary.classList.remove('hidden')
+    planError.classList.add('hidden')
+  }
+
+  cards.forEach((card) => {
+    card.addEventListener('click', () => selectCard(card))
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        selectCard(card)
+      }
+    })
+  })
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+
+    if (!selectedPlanInput.value) {
+      planError.classList.remove('hidden')
+      planSummary.classList.add('hidden')
+      return
+    }
+
+    const res = await fetch('/api/payments/create-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plan_id: selectedPlanInput.value,
+        method: selectedPaymentInput.value,
+      }),
+    })
+
+    if (!res.ok) {
+      console.error('Payment session failed', await res.json())
+      Sentry.captureException(new Error(`Payment session failed - ${res.status}`))
+      return
+    }
+
+    const data = await res.json()
+    return (window.location.href = data.url)
+  })
+</script>

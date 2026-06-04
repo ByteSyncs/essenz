@@ -1,277 +1,537 @@
-<header id="main-header" class="fixed w-full z-50 bg-(--clr-bg) transition-all duration-300">
+---
+interface Props {
+  theme?: 'modern' | 'minimalist'
+  logo?: string
+  name?: string
+  tagline?: string
+}
+
+const { theme = 'modern', logo, name, tagline } = Astro.props
+const isMin = theme === 'minimalist'
+
+const pathname = Astro.url.pathname
+const menuUrl = pathname + '/menu'
+
+const navItems = [
+  { label: 'Inicio', href: '#home' },
+  { label: 'Variedades', href: '#varieties' },
+  { label: 'Contacto', href: '#contact' },
+]
+---
+
+<header
+  id="main-header"
+  class:list={[
+    'fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out border-b',
+    isMin ? 'bg-white/95 border-black/8' : 'bg-[#F5EFE6]/95 border-[#2C1E16]/10',
+  ]}
+>
+  {
+    !isMin && (
+      <div
+        id="top-strip"
+        class="bg-[#2C1E16] text-[#F5EFE6]/70 overflow-hidden transition-all duration-500 h-9"
+      >
+        <div class="max-w-7xl mx-auto px-8 h-full flex justify-between items-center text-[10px] tracking-[0.25em] uppercase font-bold">
+          <div class="flex gap-8">
+            <span class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#C8A882] animate-pulse" />
+              Abierto: 7:00 - 21:00
+            </span>
+            <span class="hidden lg:inline-block">Buenos Aires, AR</span>
+          </div>
+          <a href="tel:+541140000000" class="hover:text-white transition-colors no-underline">
+            +54 9 11 1234-5678
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  {
+    isMin && (
+      <div id="min-ticker" class="overflow-hidden h-8 bg-black">
+        <div class="min-ticker-track flex items-center h-full gap-0 whitespace-nowrap">
+          {Array(6)
+            .fill(null)
+            .map(() => (
+              <span class="inline-flex items-center gap-6 px-8 text-[10px] tracking-[0.3em] uppercase text-white/50 font-bold shrink-0">
+                <span class="text-[--clr-accent]">+</span>
+                Tueste Propio
+                <span class="text-white/20">.</span>
+                Granos de Especialidad
+                <span class="text-white/20">.</span>
+                12 Origenes
+                <span class="text-white/20">.</span>
+                Abierto 7:00-21:00
+              </span>
+            ))}
+        </div>
+      </div>
+    )
+  }
+
   <div
-    id="top-strip"
-    class="bg-(--clr-ink-dark) text-(--clr-bg) overflow-hidden transition-all duration-400 h-8.5"
+    id="header-container"
+    class:list={[
+      'mx-auto px-6 md:px-12 flex justify-between items-center transition-all duration-500',
+      isMin ? 'py-6 max-w-none' : 'py-3 max-w-7xl',
+    ]}
   >
-    <div class="max-w-7xl mx-auto px-8 h-full flex justify-between items-center">
-      <div
-        class="flex gap-6 text-[10.5px] tracking-widest uppercase text-(--clr-bg)/60 whitespace-nowrap font-['DM_Sans',system-ui,sans-serif]"
-      >
-        <span class="flex items-center gap-1.5">
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-            <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1" opacity="0.5"
-            ></circle>
-            <path
-              d="M6 3v3l2 1.5"
-              stroke="currentColor"
-              stroke-width="1"
-              stroke-linecap="round"
-              opacity="0.5"></path>
-          </svg>
-          Lun–Vie 7:00–21:00
-        </span>
-        <span class="hidden sm:inline">Sáb–Dom 8:00–22:00</span>
-        <span class="hidden md:inline">📍 Av. Entre Ríos, CABA</span>
-      </div>
-      <div
-        class="flex gap-5 items-center text-[10.5px] tracking-widest uppercase font-['DM_Sans',system-ui,sans-serif]"
-      >
-        <span class="w-px h-3 bg-(--clr-bg)/20"></span>
-        <a
-          href="tel:+541140000000"
-          class="text-(--clr-bg)/60 hover:text-(--clr-accent-light) transition-colors no-underline hidden sm:inline"
-          >+54 9 11 1234-5678</a
-        >
-      </div>
-    </div>
-  </div>
-
-  <div class="h-0.75 bg-(--clr-green)"></div>
-
-  <div class="max-w-7xl mx-auto px-8 py-4.5 pb-3.5 flex justify-between items-center gap-6">
-    <a href="/" class="flex flex-col items-start gap-0.5 no-underline group shrink-0">
-      <span
-        class="text-[8.5px] tracking-[0.22em] uppercase text-(--clr-ink)/60 font-medium font-['DM_Sans',system-ui,sans-serif]"
-      >
-        Est. 2024 · Buenos Aires
-      </span>
-      <span
-        class="text-[28px] font-bold text-(--clr-ink-dark) leading-none tracking-tight flex items-center gap-2.5 group-hover:opacity-80 transition-opacity font-['Playfair_Display',Georgia,serif]"
-      >
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          class="relative top-px shrink-0"
-        >
-          <path d="M20,40 C20,25 80,25 80,40 L75,75 C75,85 25,85 25,75 Z" fill="var(--clr-green)"
-          ></path>
-          <path
-            d="M78,45 C88,45 88,65 78,65 L76,65"
-            stroke="var(--clr-green)"
-            stroke-width="6"
-            stroke-linecap="round"></path>
-          <path
-            d="M35,25 C35,15 45,15 45,5"
-            stroke="var(--clr-accent-light)"
-            stroke-width="5"
-            stroke-linecap="round"
-            opacity="0.9"></path>
-          <path
-            d="M50,25 C50,10 60,10 60,0"
-            stroke="var(--clr-accent-light)"
-            stroke-width="5"
-            stroke-linecap="round"
-            opacity="0.7"></path>
-          <path
-            d="M65,25 C65,18 72,18 72,10"
-            stroke="var(--clr-accent-light)"
-            stroke-width="5"
-            stroke-linecap="round"
-            opacity="0.5"></path>
-        </svg>
-        ByteSyncs
-      </span>
-      <span
-        class="text-[12px] italic text-(--clr-ink-dark)/60 font-['Cormorant_Garamond',Georgia,serif]"
-      >
-        Café de especialidad &amp; experiencias
-      </span>
-    </a>
-
-    <div class="hidden lg:flex flex-col items-center gap-1.5 flex-1 max-w-70">
-      <div class="w-full h-px bg-linear-to-r from-transparent via-(--clr-ink)/15 to-transparent">
-      </div>
-      <span
-        class="text-[9px] tracking-[0.3em] uppercase text-(--clr-ink-dark)/60 whitespace-nowrap font-['Cormorant_Garamond',Georgia,serif]"
-      >
-        desde el grano hasta la taza
-      </span>
-      <div class="w-full h-px bg-linear-to-r from-transparent via-(--clr-ink)/15 to-transparent">
-      </div>
-    </div>
-
-    <nav class="hidden md:flex items-center gap-8">
-      <a
-        href="/#inicio"
-        class="relative text-[11.5px] tracking-[0.12em] uppercase text-(--clr-ink-dark)/60 no-underline font-normal transition-colors duration-200 hover:text-(--clr-ink-dark) font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-(--clr-accent-light) after:transition-[width] after:duration-300 hover:after:w-full"
-        >Inicio</a
-      >
-      <a
-        href="/#variedades"
-        class="relative text-[11.5px] tracking-[0.12em] uppercase text-(--clr-ink-dark)/60 no-underline font-normal transition-colors duration-200 hover:text-(--clr-ink-dark) font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-(--clr-accent-light) after:transition-[width] after:duration-300 hover:after:w-full"
-        >Variedades</a
-      >
-      <a
-        href="/#contacto"
-        class="relative text-[11.5px] tracking-[0.12em] uppercase text-(--clr-ink-dark)/60 no-underline font-normal transition-colors duration-200 hover:text-(--clr-ink-dark) font-['DM_Sans',system-ui,sans-serif] after:content-[''] after:absolute after:left-0 after:-bottom-0.75 after:w-0 after:h-px after:bg-(--clr-accent-light) after:transition-[width] after:duration-300 hover:after:w-full"
-        >Contacto</a
-      >
-
-      <a
-        href="/menu"
-        class="relative inline-flex items-center gap-2 px-5.5 py-2.5 bg-(--clr-green) text-(--clr-bg) text-[10.5px] tracking-[0.18em] uppercase font-medium no-underline overflow-hidden transition-colors font-['DM_Sans',system-ui,sans-serif] group/cta"
-      >
-        <span
-          class="absolute inset-0 bg-(--clr-accent-light) -translate-x-full transition-transform duration-350 ease-in-out group-hover/cta:translate-x-0"
-        ></span>
-        <span class="relative z-10">Ver Carta</span>
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" class="relative z-10">
-          <path
-            d="M3 8h10M9 4l4 4-4 4"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-        </svg>
+    <div class="flex-1 lg:flex-none">
+      <a href={pathname} class="group flex items-center gap-4 no-underline">
+        {
+          logo ? (
+            <img
+              src={logo}
+              alt={name}
+              loading="eager"
+              fetchpriority="high"
+              decoding="sync"
+              width="160"
+              height="80"
+              class:list={[
+                'transition-all duration-500 group-hover:scale-105 object-contain',
+                isMin ? 'h-10 w-auto' : 'h-18 w-auto',
+              ]}
+            />
+          ) : isMin ? (
+            <div class="flex items-center gap-3">
+              <span class="w-5 h-5 bg-(--clr-accent) shrink-0 transition-transform duration-300 group-hover:rotate-45" />
+              <span class="text-xl font-bold tracking-[-0.04em] text-black leading-none">
+                {name}
+              </span>
+            </div>
+          ) : (
+            <div class="flex flex-col">
+              <span class="font-bold tracking-tighter leading-none text-4xl text-[#2C1E16]">
+                {name}
+              </span>
+              <span class="text-[11px] tracking-[0.35em] uppercase text-[#2C1E16]/60 mt-1.5 font-bold">
+                {tagline}
+              </span>
+            </div>
+          )
+        }
       </a>
+    </div>
+
+    <nav class="hidden md:flex items-center gap-10">
+      {
+        navItems.map(({ label, href }) =>
+          isMin ? (
+            <a
+              href={href}
+              class="text-[11px] tracking-[0.25em] uppercase no-underline transition-all duration-200 text-black/50 hover:text-black font-bold py-2"
+            >
+              {label}
+            </a>
+          ) : (
+            <a
+              href={href}
+              class="text-[12px] tracking-[0.2em] uppercase no-underline transition-all duration-300 relative group py-2 font-bold text-[#2C1E16]/80"
+            >
+              {label}
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-[#C8A882] transition-all duration-300 group-hover:w-full" />
+            </a>
+          ),
+        )
+      }
+
+      {
+        isMin ? (
+          <a
+            href={menuUrl}
+            class="inline-flex items-center gap-2.5 px-6 py-2.5 text-[11px] tracking-[0.25em] uppercase no-underline font-bold border border-black text-black hover:bg-black hover:text-white transition-all duration-200"
+          >
+            <span>Ver Carta</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path
+                d="M2 6h8M6.5 2.5L10 6l-3.5 3.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        ) : (
+          <a
+            href={menuUrl}
+            class="inline-flex items-center gap-3 px-8 py-3.5 text-[11px] tracking-[0.25em] uppercase no-underline transition-all duration-500 font-bold bg-[#2C1E16] text-[#F5EFE6] hover:bg-[#C8A882] hover:text-[#2C1E16]"
+          >
+            <span>Ver Carta</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 8h10M9 4l4 4-4 4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        )
+      }
     </nav>
 
     <button
       id="mobile-menu-btn"
-      class="md:hidden border border-(--clr-ink-dark)/15 hover:border-(--clr-green) transition-colors w-9.5 h-9.5 flex flex-col items-center justify-center gap-1.25"
-      aria-label="Abrir menú de navegación"
+      class="md:hidden relative z-110 flex flex-col justify-center items-end gap-1.25 w-10 h-10 p-2"
+      aria-label="Abrir menu"
+      aria-expanded="false"
     >
       <span
-        id="hb-1"
-        class="block w-4 h-px bg-(--clr-ink-dark) transition-all duration-300 origin-center"></span>
+        class:list={[
+          'block h-0.5 rounded-full transition-all duration-300 origin-center hb-top',
+          isMin ? 'bg-black w-6' : 'bg-[#2C1E16] w-6',
+        ]}></span>
       <span
-        id="hb-2"
-        class="block w-4 h-px bg-(--clr-ink-dark) transition-all duration-300 origin-center"></span>
+        class:list={[
+          'block h-0.5 rounded-full transition-all duration-300 hb-mid',
+          isMin ? 'bg-black w-4' : 'bg-[#2C1E16] w-4',
+        ]}></span>
       <span
-        id="hb-3"
-        class="block w-4 h-px bg-(--clr-ink-dark) transition-all duration-300 origin-center"></span>
+        class:list={[
+          'block h-0.5 rounded-full transition-all duration-300 origin-center hb-bot',
+          isMin ? 'bg-black w-6' : 'bg-[#2C1E16] w-6',
+        ]}></span>
     </button>
-  </div>
-
-  <div
-    id="mobile-menu"
-    class="hidden md:hidden border-t border-(--clr-ink-dark)/10 bg-(--clr-bg) px-8 pb-8 pt-7"
-  >
-    <nav class="flex flex-col">
-      <a
-        href="/#inicio"
-        class="flex justify-between items-center py-3.5 border-b border-(--clr-ink-dark)/10 text-[22px] font-normal text-(--clr-ink-dark) no-underline transition-colors hover:text-(--clr-green) font-['Cormorant_Garamond',Georgia,serif]"
-      >
-        Inicio
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-          ><path
-            d="M5 8h6M8 5l3 3-3 3"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path></svg
-        >
-      </a>
-      <a
-        href="/#variedades"
-        class="flex justify-between items-center py-3.5 border-b border-(--clr-ink-dark)/10 text-[22px] font-normal text-(--clr-ink-dark) no-underline transition-colors hover:text-(--clr-green) font-['Cormorant_Garamond',Georgia,serif]"
-      >
-        Variedades
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-          ><path
-            d="M5 8h6M8 5l3 3-3 3"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path></svg
-        >
-      </a>
-      <a
-        href="/#contacto"
-        class="flex justify-between items-center py-3.5 border-b border-(--clr-ink-dark)/10 text-[22px] font-normal text-(--clr-ink-dark) no-underline transition-colors hover:text-(--clr-green) font-['Cormorant_Garamond',Georgia,serif]"
-      >
-        Contacto
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
-          ><path
-            d="M5 8h6M8 5l3 3-3 3"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path></svg
-        >
-      </a>
-      <a
-        href="/menu"
-        class="mt-6 block text-center bg-(--clr-green) text-(--clr-bg) py-3.5 text-[11px] tracking-[0.2em] uppercase font-medium no-underline hover:bg-(--clr-accent-light) transition-colors font-['DM_Sans',system-ui,sans-serif]"
-      >
-        Ver Carta Completa →
-      </a>
-    </nav>
-  </div>
-
-  <div class="flex items-center px-8">
-    <div class="flex-1 h-px bg-(--clr-ink-dark)/10"></div>
-    <div class="w-0.75 h-0.75 rounded-full bg-(--clr-ink-dark)/15 mx-2"></div>
-    <div class="w-1.25 h-1.25 bg-(--clr-accent-light) mx-2.5 rotate-45 opacity-60"></div>
-    <div class="w-0.75 h-0.75 rounded-full bg-(--clr-ink-dark)/15 mx-2"></div>
-    <div class="flex-1 h-px bg-(--clr-ink-dark)/10"></div>
   </div>
 </header>
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link
-  href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
-  rel="stylesheet"
-/>
+<div
+  id="mobile-menu"
+  class:list={[
+    'fixed top-0 left-0 w-full z-200 flex flex-col overflow-hidden',
+    isMin ? 'bg-white' : 'bg-[#F5EFE6]',
+  ]}
+  aria-hidden="true"
+>
+  <div
+    class:list={[
+      'flex items-center justify-between px-6 shrink-0',
+      isMin ? 'h-18.25 border-b border-black/8' : 'h-22',
+    ]}
+  >
+    <a href="/" class="group flex items-center gap-3 no-underline">
+      {
+        logo ? (
+          <img
+            src={logo}
+            alt={name}
+            class:list={['object-contain', isMin ? 'h-9 w-auto' : 'h-14 w-auto']}
+          />
+        ) : isMin ? (
+          <div class="flex items-center gap-3">
+            <span class="w-4 h-4 bg-(--clr-accent) shrink-0" />
+            <span class="text-lg font-bold tracking-[-0.04em] text-black leading-none">{name}</span>
+          </div>
+        ) : (
+          <div class="flex flex-col">
+            <span class="font-bold tracking-tighter leading-none text-3xl text-[#2C1E16]">
+              {name}
+            </span>
+            {tagline && (
+              <span class="text-[10px] tracking-[0.3em] uppercase text-[#2C1E16]/50 mt-1 font-bold">
+                {tagline}
+              </span>
+            )}
+          </div>
+        )
+      }
+    </a>
+
+    <button
+      id="mobile-menu-close"
+      class:list={[
+        'w-10 h-10 flex items-center justify-center transition-colors duration-200',
+        isMin ? 'hover:bg-black/5' : 'hover:bg-[#2C1E16]/8',
+      ]}
+      aria-label="Cerrar menu"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path
+          d="M4 4l12 12M16 4L4 16"
+          stroke={isMin ? 'black' : '#2C1E16'}
+          stroke-width="1.5"
+          stroke-linecap="round"></path>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="flex flex-col flex-1 px-6 justify-center">
+    {
+      navItems.map(({ label, href }, i) =>
+        isMin ? (
+          <a
+            href={href}
+            class="group flex items-center justify-between py-5 border-b border-black/8 no-underline mobile-nav-item"
+            style={`--delay: ${i * 60}ms`}
+          >
+            <span class="text-[2.5rem] font-bold text-black tracking-[-0.04em] group-hover:text-(--clr-accent) transition-colors duration-200 leading-none">
+              {label}
+            </span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+              class="text-black/20 group-hover:text-(--clr-accent) transition-colors duration-200 shrink-0"
+            >
+              <path
+                d="M4 10h12M10 4l6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        ) : (
+          <a
+            href={href}
+            class="group flex items-center justify-between py-5 border-b border-[#2C1E16]/8 no-underline mobile-nav-item"
+            style={`--delay: ${i * 60}ms`}
+          >
+            <span class="text-[2.5rem] font-bold text-[#2C1E16] tracking-tighter group-hover:text-[#C8A882] transition-colors duration-300 leading-none">
+              {label}
+            </span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+              class="text-[#2C1E16]/20 group-hover:text-[#C8A882] transition-colors duration-300 shrink-0"
+            >
+              <path
+                d="M4 10h12M10 4l6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        ),
+      )
+    }
+
+    <a
+      href={menuUrl}
+      class:list={[
+        'mt-8 flex items-center justify-center gap-3 py-4 text-[11px] tracking-[0.25em] uppercase no-underline font-bold transition-all duration-300 mobile-nav-item',
+        isMin
+          ? 'border border-black text-black hover:bg-black hover:text-white'
+          : 'bg-[#2C1E16] text-[#F5EFE6] hover:bg-[#C8A882] hover:text-[#2C1E16]',
+      ]}
+      style={`--delay: ${navItems.length * 60}ms`}
+    >
+      <span>Ver Carta</span>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M3 8h10M9 4l4 4-4 4"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </a>
+  </nav>
+
+  <div
+    class:list={[
+      'px-6 py-6 shrink-0 flex items-center gap-6 border-t',
+      isMin ? 'border-black/8' : 'border-[#2C1E16]/8',
+    ]}
+  >
+    <a
+      href="tel:+541140000000"
+      class:list={[
+        'text-[10px] tracking-[0.2em] uppercase no-underline font-bold transition-colors',
+        isMin ? 'text-black/40 hover:text-black' : 'text-[#2C1E16]/40 hover:text-[#2C1E16]',
+      ]}
+    >
+      +54 9 11 1234-5678
+    </a>
+    <span class:list={['w-px h-4', isMin ? 'bg-black/15' : 'bg-[#2C1E16]/15']}></span>
+    <span
+      class:list={[
+        'text-[10px] tracking-[0.2em] uppercase font-bold',
+        isMin ? 'text-black/30' : 'text-[#2C1E16]/30',
+      ]}
+    >
+      7:00 - 21:00
+    </span>
+  </div>
+</div>
+
+<style>
+  #main-header {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .min-ticker-track {
+    animation: ticker 28s linear infinite;
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .min-ticker-track {
+      animation: none;
+    }
+  }
+  @keyframes ticker {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  #mobile-menu {
+    height: 100dvh;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(100%);
+    overflow: hidden;
+    transition:
+      opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0.35s;
+  }
+
+  @supports not (height: 100dvh) {
+    #mobile-menu {
+      height: 100vh;
+    }
+  }
+
+  #mobile-menu.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0);
+    transition:
+      opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0s;
+  }
+
+  .mobile-nav-item {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
+    transition-delay: var(--delay, 0ms);
+  }
+  #mobile-menu.is-open .mobile-nav-item {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .hb-top,
+  .hb-bot {
+    transition:
+      transform 0.3s ease,
+      width 0.3s ease;
+  }
+  .hb-mid {
+    transition:
+      opacity 0.2s ease,
+      width 0.3s ease;
+  }
+  #mobile-menu-btn.is-open .hb-top {
+    transform: translateY(7px) rotate(45deg);
+    width: 24px !important;
+  }
+  #mobile-menu-btn.is-open .hb-mid {
+    opacity: 0;
+  }
+  #mobile-menu-btn.is-open .hb-bot {
+    transform: translateY(-7px) rotate(-45deg);
+    width: 24px !important;
+  }
+</style>
 
 <script>
   ;(() => {
+    const header = document.getElementById('main-header')
+    const container = document.getElementById('header-container')
     const strip = document.getElementById('top-strip')
-    const header = document.getElementById('main-header') as HTMLElement
-    const menuBtn = document.getElementById('mobile-menu-btn')
+    const ticker = document.getElementById('min-ticker')
+    const menuBtn = document.getElementById('mobile-menu-btn') as HTMLButtonElement | null
+    const menuClose = document.getElementById('mobile-menu-close')
     const mobileMenu = document.getElementById('mobile-menu')
-    const hbs = [
-      document.getElementById('hb-1'),
-      document.getElementById('hb-2'),
-      document.getElementById('hb-3'),
-    ] as HTMLElement[]
 
-    if (!strip || !header || !menuBtn || !mobileMenu) return
+    if (!header || !menuBtn || !mobileMenu) return
 
     window.addEventListener(
       'scroll',
       () => {
         const y = window.scrollY
-        header.style.boxShadow = y > 10 ? '0 2px 40px rgba(26,18,11,0.10)' : 'none'
-        if (y > 74) {
-          strip.style.height = '0'
-          strip.style.opacity = '0'
+        const isScrolled = y > 30
+
+        if (isScrolled) {
+          container?.classList.add('py-3')
+          container?.classList.remove('py-5', 'py-6')
+          if (strip) {
+            strip.style.height = '0'
+            strip.style.opacity = '0'
+          }
+          if (ticker) {
+            ticker.style.height = '0'
+            ticker.style.opacity = '0'
+          }
+          header.style.boxShadow = '0 1px 0 rgba(0,0,0,0.08)'
         } else {
-          strip.style.height = '34px'
-          strip.style.opacity = '1'
+          container?.classList.remove('py-3')
+          container?.classList.add(header.classList.contains('bg-white/95') ? 'py-5' : 'py-6')
+          if (strip) {
+            strip.style.height = '36px'
+            strip.style.opacity = '1'
+          }
+          if (ticker) {
+            ticker.style.height = '32px'
+            ticker.style.opacity = '1'
+          }
+          header.style.boxShadow = 'none'
         }
       },
       { passive: true },
     )
 
     let isOpen = false
-    const toggleMenu = () => {
-      isOpen = !isOpen
-      mobileMenu.classList.toggle('hidden', !isOpen)
-      hbs[0].style.transform = isOpen ? 'translateY(6px) rotate(45deg)' : ''
-      hbs[1].style.opacity = isOpen ? '0' : '1'
-      hbs[2].style.transform = isOpen ? 'translateY(-6px) rotate(-45deg)' : ''
+
+    const openMenu = () => {
+      isOpen = true
+      mobileMenu.classList.add('is-open')
+      mobileMenu.setAttribute('aria-hidden', 'false')
+      menuBtn.classList.add('is-open')
+      menuBtn.setAttribute('aria-expanded', 'true')
+      menuBtn.setAttribute('aria-label', 'Cerrar menu')
+      document.body.style.overflow = 'hidden'
     }
 
-    menuBtn.addEventListener('click', toggleMenu)
-    window.addEventListener('click', (e) => {
-      if (isOpen && !header.contains(e.target as Node)) toggleMenu()
+    const closeMenu = () => {
+      isOpen = false
+      mobileMenu.classList.remove('is-open')
+      mobileMenu.setAttribute('aria-hidden', 'true')
+      menuBtn.classList.remove('is-open')
+      menuBtn.setAttribute('aria-expanded', 'false')
+      menuBtn.setAttribute('aria-label', 'Abrir menu')
+      document.body.style.overflow = ''
+    }
+
+    menuBtn.addEventListener('click', () => (isOpen ? closeMenu() : openMenu()))
+    menuClose?.addEventListener('click', closeMenu)
+    mobileMenu.querySelectorAll('a').forEach((l) => l.addEventListener('click', closeMenu))
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen) closeMenu()
     })
-    mobileMenu
-      .querySelectorAll('a')
-      .forEach((link) => link.addEventListener('click', () => isOpen && toggleMenu()))
   })()
 </script>

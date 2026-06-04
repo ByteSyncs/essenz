@@ -1,0 +1,41 @@
+---
+import MinimalistLayout from '../../../../layouts/MinimalistLayout.astro'
+import DashboardShell from '../../../../components/react/dashboard/DashboardShell.tsx'
+
+const { slug } = Astro.params
+const { supabase, user } = Astro.locals
+
+if (!user) {
+  return Astro.redirect('/auth/sign-in')
+}
+
+const { data: profile } = await supabase
+  .from('profiles')
+  .select(
+    `
+    is_setup_complete,
+    organizations (slug)
+  `,
+  )
+  .eq('id', user.id)
+  .single()
+
+const org = Array.isArray(profile?.organizations)
+  ? profile.organizations[0]
+  : profile?.organizations
+
+if (!org || org.slug !== slug) {
+  return Astro.redirect('/?error=unauthorized')
+}
+
+if (!profile?.is_setup_complete) {
+  return Astro.redirect(`/${slug}/admin/setup`)
+}
+---
+
+<MinimalistLayout
+  title="Dashboard | Essenz"
+  description="Panel de administración de tu carta digital."
+>
+  <DashboardShell slug={slug!} client:load />
+</MinimalistLayout>
