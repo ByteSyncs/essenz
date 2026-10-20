@@ -1,0 +1,302 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import DemoCta from '../DemoContact.astro'
+import { ESSENZ_URL } from '../../../constants/site'
+
+const supabase = Astro.locals.supabase
+const { data: tenant, error: organizationError } = await supabase
+  .from('organizations')
+  .select('id, name, tagline, logo_url')
+  .eq('slug', 'demo-modern')
+  .maybeSingle()
+
+if (organizationError) {
+  console.error('[demo-modern/menu] organization error:', organizationError)
+  throw new Error('Could not load the modern demo organization.', { cause: organizationError })
+}
+
+if (!tenant) return Astro.redirect('/404')
+
+const { data: categories, error: categoriesError } = await supabase
+  .from('categories')
+  .select(
+    `
+    id,
+    title,
+    display_order,
+    products (
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      in_offer,
+      offer_percent,
+      is_active,
+      display_order
+    )
+  `,
+  )
+  .eq('organization_id', tenant.id)
+  .eq('products.is_active', true)
+  .order('display_order', { ascending: true })
+  .order('display_order', { referencedTable: 'products', ascending: true })
+
+if (categoriesError) {
+  console.error('[demo-modern/menu] products error:', categoriesError)
+  throw new Error('Could not load the modern demo menu.', { cause: categoriesError })
+}
+
+const groups = (categories ?? [])
+  .map((category) => ({
+    id: category.id,
+    title: category.title,
+    items: [...(category.products ?? [])]
+      .filter((product) => product.is_active)
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
+  }))
+  .filter((group) => group.items.length > 0)
+
+const totalItems = groups.reduce((sum, group) => sum + group.items.length, 0)
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(price)
+---
+
+<Layout
+  title={`Carta | ${tenant.name}`}
+  description={tenant.tagline ?? `Consultá la carta actualizada de ${tenant.name}.`}
+  theme="modern"
+>
+  <main class="min-h-svh bg-[#f5efe6] text-[#2c1e16]">
+    <div
+      class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#2c1e16] px-5 py-2.5 text-center text-[11px] font-medium text-white/75"
+    >
+      <span>Demo de Essenz con datos de ejemplo.</span>
+      <a
+        href={ESSENZ_URL}
+        class="press font-semibold text-white underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d7b98e]"
+      >
+        Crear mi sitio ↗
+      </a>
+    </div>
+
+    <header class="glass-bar sticky top-0 z-30 border-b border-[#2c1e16]/10">
+      <nav
+        aria-label={`Navegación de ${tenant.name}`}
+        class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3 sm:px-10"
+      >
+        <a
+          href="/demo-modern"
+          class="press flex min-h-11 items-center gap-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5a2b]"
+        >
+          <span aria-hidden="true">←</span>
+          <span class="font-(family-name:--font-display) text-lg">{tenant.name}</span>
+        </a>
+        <a
+          href={ESSENZ_URL}
+          class="press inline-flex min-h-11 items-center rounded-full bg-[#2c1e16] px-5 text-sm font-semibold text-white hover:bg-[#65422e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5a2b]"
+        >
+          Crear el mío
+        </a>
+      </nav>
+      {
+        groups.length > 1 && (
+          <nav aria-label="Categorías de la carta" class="mx-auto max-w-5xl">
+            <ul class="flex snap-x gap-2 overflow-x-auto px-5 pb-3 sm:px-10 [scrollbar-width:none]">
+              {groups.map((group) => (
+                <li class="shrink-0 snap-start">
+                  <a
+                    href={`#category-${group.id}`}
+                    class="press inline-flex min-h-10 items-center rounded-full bg-[#2c1e16]/7 px-4 text-sm font-semibold hover:bg-[#2c1e16]/14 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b5a2b]"
+                  >
+                    {group.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
+    </header>
+
+    <section class="px-5 pb-10 pt-14 sm:px-10 sm:pb-14 sm:pt-20">
+      <div class="mx-auto max-w-5xl">
+        <p
+          class="rise mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8b5a2b]"
+          style="--i:0"
+        >
+          {tenant.name}
+        </p>
+        <h1
+          class="rise font-(family-name:--font-display) text-6xl leading-none font-semibold tracking-[-0.04em] sm:text-8xl"
+          style="--i:1"
+        >
+          La carta<span class="text-[#8b5a2b]">.</span>
+        </h1>
+        <p class="rise mt-5 max-w-xl text-base leading-relaxed text-[#2c1e16]/65" style="--i:2">
+          {tenant.tagline ?? `Productos y precios de ${tenant.name}.`}
+          <span class="mt-1 block text-sm text-[#2c1e16]/45">
+            {totalItems === 1 ? '1 producto' : `${totalItems} productos`}
+          </span>
+        </p>
+      </div>
+    </section>
+
+    <div class="px-5 pb-20 sm:px-10">
+      {
+        groups.length ? (
+          <div class="mx-auto max-w-5xl space-y-14">
+            {groups.map((group, groupIndex) => (
+              <section id={`category-${group.id}`} class="scroll-mt-32">
+                <div class="mb-2 flex items-baseline justify-between gap-4">
+                  <h2 class="font-(family-name:--font-display) text-3xl font-semibold tracking-[-0.02em] sm:text-4xl">
+                    {group.title}
+                  </h2>
+                  <p class="text-xs font-semibold tabular-nums text-[#2c1e16]/45">
+                    {group.items.length === 1 ? '1 producto' : `${group.items.length} productos`}
+                  </p>
+                </div>
+                <ul class="divide-y divide-[#2c1e16]/12 border-t border-[#2c1e16]/25">
+                  {group.items.map((item, itemIndex) => {
+                    const price = Number(item.price)
+                    const hasOffer = Boolean(item.in_offer && item.offer_percent)
+                    const finalPrice = hasOffer
+                      ? price * (1 - Number(item.offer_percent) / 100)
+                      : price
+                    const isFirst = groupIndex === 0 && itemIndex === 0
+
+                    return (
+                      <li class="rise" style={`--i:${itemIndex}`}>
+                        <article
+                          class:list={[
+                            'grid items-center gap-4 py-4 sm:gap-6 sm:py-5',
+                            item.image_url
+                              ? 'grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:grid-cols-[5rem_minmax(0,1fr)_auto]'
+                              : 'grid-cols-[minmax(0,1fr)_auto]',
+                          ]}
+                        >
+                          {item.image_url && (
+                            <img
+                              src={item.image_url}
+                              alt={item.name}
+                              width="160"
+                              height="160"
+                              loading={isFirst ? 'eager' : 'lazy'}
+                              fetchpriority={isFirst ? 'high' : 'auto'}
+                              decoding="async"
+                              class="size-14 rounded-xl object-cover sm:size-20"
+                            />
+                          )}
+                          <div class="min-w-0">
+                            <h3 class="font-(family-name:--font-display) text-base font-semibold sm:text-xl">
+                              {item.name}
+                            </h3>
+                            {item.description && (
+                              <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-[#2c1e16]/60 sm:text-sm">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+                          <div class="text-right">
+                            <p class="text-sm font-semibold tabular-nums sm:text-base">
+                              {formatPrice(finalPrice)}
+                            </p>
+                            {hasOffer && (
+                              <p class="mt-1 flex items-center justify-end gap-1.5 text-xs text-[#2c1e16]/45">
+                                <span class="tabular-nums line-through">{formatPrice(price)}</span>
+                                <span class="rounded-full bg-[#8b5a2b] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                  -{item.offer_percent}%
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                        </article>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <p class="mx-auto max-w-5xl border-y border-[#2c1e16]/15 py-10 text-center text-sm text-[#2c1e16]/60">
+            La carta todavía no tiene productos publicados.
+          </p>
+        )
+      }
+    </div>
+
+    <DemoCta theme="modern" name={tenant.name} />
+
+    <footer
+      class="flex flex-col gap-3 bg-[#2c1e16] px-5 py-7 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between sm:px-10"
+    >
+      <a href="/demo-modern" class="font-semibold text-white underline underline-offset-4"
+        >Volver a {tenant.name}</a
+      >
+      <span>Carta digital · Essenz</span>
+    </footer>
+  </main>
+
+  <style>
+    :global(html) {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    a {
+      touch-action: manipulation;
+    }
+
+    .press {
+      transition:
+        transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+        background-color 160ms ease,
+        border-color 160ms ease;
+    }
+
+    .press:active {
+      transform: scale(0.97);
+    }
+
+    .glass-bar {
+      background: rgba(245, 239, 230, 0.78);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
+      backdrop-filter: blur(18px) saturate(180%);
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+      .glass-bar {
+        background: #f5efe6;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :global(html) {
+        scroll-behavior: smooth;
+      }
+
+      .rise {
+        opacity: 1;
+        transform: translateY(0);
+        transition:
+          opacity 420ms cubic-bezier(0.23, 1, 0.32, 1),
+          transform 420ms cubic-bezier(0.23, 1, 0.32, 1);
+        transition-delay: calc(min(var(--i, 0), 8) * 40ms);
+      }
+
+      @starting-style {
+        .rise {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+    }
+  </style>
+</Layout>

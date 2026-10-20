@@ -1,0 +1,161 @@
+<section class="relative overflow-hidden bg-[#faf8f4] px-5 pb-24 pt-36 sm:px-8 sm:pb-32 sm:pt-40">
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute -right-36 -top-40 size-130 rounded-full bg-[#d8c2a4]/25 blur-3xl"
+  >
+  </div>
+  <div class="relative mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-[0.95fr_1.05fr]">
+    <div class="max-w-xl">
+      <p
+        class="hero-rise mb-5 text-xs font-bold uppercase tracking-[0.22em] text-(--clr-accent)"
+        style="--i:0"
+      >
+        Para cafeterías, restaurantes y bares.
+      </p>
+      <h1
+        class="hero-rise mb-6 text-balance text-5xl leading-[1.02] font-bold tracking-[-0.035em] text-(--clr-ink) sm:text-6xl lg:text-7xl"
+        style="--i:1"
+      >
+        Tu local, mejor conectado.
+      </h1>
+      <p class="hero-rise mb-9 max-w-lg text-lg leading-relaxed text-stone-600" style="--i:2">
+        Essenz reúne el sitio y el menú digital que ven tus clientes con las herramientas que tu
+        equipo necesita para organizar el día a día.
+      </p>
+      <div class="hero-rise flex flex-col gap-3 sm:flex-row" style="--i:3">
+        <a
+          href="/auth/sign-up"
+          class="press inline-flex min-h-12 items-center justify-center rounded-full bg-(--clr-ink) px-7 text-sm font-semibold text-white hover:bg-(--clr-accent) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--clr-accent)"
+        >
+          Crear mi cuenta
+        </a>
+        <a
+          href="#platform"
+          class="press inline-flex min-h-12 items-center justify-center rounded-full border border-stone-300 px-7 text-sm font-semibold text-(--clr-ink) hover:border-(--clr-ink) focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--clr-accent)"
+        >
+          Conocer Essenz
+        </a>
+      </div>
+      <p class="hero-rise mt-7 text-sm text-stone-500" style="--i:4">
+        Mirá cómo se ve un sitio con Essenz:
+        <a
+          href="/demo-modern"
+          class="ml-1 font-semibold text-(--clr-ink) underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-accent)"
+          >demo moderna</a
+        >
+        ·
+        <a
+          href="/demo-minimalist"
+          class="font-semibold text-(--clr-ink) underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-accent)"
+          >demo minimalista</a
+        >
+      </p>
+    </div>
+
+    <figure
+      class="hero-rise relative mx-auto w-full max-w-xl"
+      style="--i:3"
+      aria-labelledby="dashboard-preview-title"
+    >
+      <div
+        class="rounded-[1.75rem] border border-stone-200 bg-white p-4 shadow-[0_28px_80px_rgba(44,30,22,0.12)] sm:p-6"
+      >
+        <div class="mb-5 flex items-center justify-between border-b border-stone-100 pb-4">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-(--clr-accent)">
+              Essenz
+            </p>
+            <p id="dashboard-preview-title" class="mt-1 text-sm font-semibold text-(--clr-ink)">
+              Vista ilustrativa del panel del local
+            </p>
+          </div>
+          <span
+            class="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-semibold text-emerald-800"
+          >
+            Operación
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-2xl bg-[#f7f4ef] p-4">
+            <p class="text-xs font-medium text-stone-500">Comandas</p>
+            <p class="mt-3 text-lg font-semibold text-(--clr-ink)">Pedidos del local</p>
+            <p class="mt-1 text-xs text-stone-500">Estados y cobros en un mismo lugar</p>
+          </div>
+          <div class="rounded-2xl bg-[#f7f4ef] p-4">
+            <p class="text-xs font-medium text-stone-500">Inventario</p>
+            <p class="mt-3 text-lg font-semibold text-(--clr-ink)">Insumos y stock</p>
+            <p class="mt-1 text-xs text-stone-500">Movimientos y niveles mínimos</p>
+          </div>
+        </div>
+
+        <div class="mt-3 rounded-2xl border border-stone-100 p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-xs font-medium text-stone-500">También desde el panel</p>
+              <p class="mt-1 text-sm font-semibold text-(--clr-ink)">
+                Ventas, gastos y estadísticas
+              </p>
+            </div>
+            <span aria-hidden="true" class="text-xl text-(--clr-accent)">↗</span>
+          </div>
+        </div>
+
+        <div
+          class="mt-3 flex items-center gap-3 rounded-2xl bg-(--clr-ink) p-4 text-white sm:hidden"
+        >
+          <span
+            aria-hidden="true"
+            class="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg"
+          >
+            ↗
+          </span>
+          <div>
+            <p class="text-sm font-semibold">Tu menú también tiene su lugar</p>
+            <p class="mt-1 text-xs text-white/65">Una web propia para tus clientes</p>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<style>
+  :global(html) {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  a {
+    touch-action: manipulation;
+  }
+
+  .press {
+    transition:
+      transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-rise {
+      opacity: 1;
+      transform: translateY(0);
+      transition:
+        opacity 480ms cubic-bezier(0.23, 1, 0.32, 1),
+        transform 480ms cubic-bezier(0.23, 1, 0.32, 1);
+      transition-delay: calc(var(--i, 0) * 70ms);
+    }
+
+    @starting-style {
+      .hero-rise {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+    }
+  }
+</style>

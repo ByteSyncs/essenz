@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro'
-import { sessionSchema } from '../../../libs/schemas/payments/createSession'
+import { validateSession } from '../../../libs/schemas/payments/createSession'
 import { PLANS } from '../../../constants/suscriptions'
 import { preApproval } from '../../../libs/mercadopago'
-import { getUSDtoARS } from '../../../libs/config'
+import supabaseAdmin from '../../../libs/supabaseAdmin'
 
 export const POST: APIRoute = async ({ locals, request, cookies, redirect }) => {
   const accessToken = cookies.get('sb-access-token')?.value
@@ -18,9 +18,10 @@ export const POST: APIRoute = async ({ locals, request, cookies, redirect }) => 
 
   try {
     const body = await request.json()
-    const validation = sessionSchema.safeParse(body)
+    const validation = validateSession(body)
     if (!validation.success) {
-      return new Response(JSON.stringify({ success: false, error: 'Plan invalid' }), {
+      console.error(validation.errors)
+      return new Response(JSON.stringify({ success: false, error: validation.errors }), {
         status: 422,
       })
     }
@@ -42,7 +43,7 @@ export const POST: APIRoute = async ({ locals, request, cookies, redirect }) => 
 
     const { data: profile, error: profileError } = await locals.supabase
       .from('profiles')
-      .select('organization_id')
+      .select('organization_id, role')
       .eq('id', user.id)
       .single()
 
@@ -53,7 +54,29 @@ export const POST: APIRoute = async ({ locals, request, cookies, redirect }) => 
       })
     }
 
-    const { data: dbSub, error: subError } = await locals.supabase
+    if (!['admin', 'owner'].includes(profile.role)) {
+      return new Response(JSON.stringify({ success: false, error: 'owner_access_required' }), {
+        status: 403,
+      })
+    }
+
+    const { data: existingSub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('status, current_period_end')
+      .eq('organization_id', profile.organization_id)
+      .maybeSingle()
+
+    if (
+      existingSub?.status === 'active' &&
+      existingSub.current_period_end &&
+      new Date(existingSub.current_period_end) >= new Date()
+    ) {
+      return new Response(JSON.stringify({ success: false, error: 'already_active' }), {
+        status: 409,
+      })
+    }
+
+    const { data: dbSub, error: subError } = await supabaseAdmin
       .from('subscriptions')
       .upsert(
         {
@@ -71,13 +94,22 @@ export const POST: APIRoute = async ({ locals, request, cookies, redirect }) => 
       throw subError
     }
 
-    const USD_TO_ARS = await getUSDtoARS(locals)
-    if (!USD_TO_ARS) {
-      return new Response(JSON.stringify('ERROR'), { status: 500 })
+    const { data: org, error: orgError } = await locals.supabase
+      .from('organizations')
+      .select('slug')
+      .eq('id', profile.organization_id)
+      .single()
+
+    if (orgError || !org) {
+      console.error('Organization not found:', orgError)
+      return new Response(JSON.stringify({ success: false, error: 'organization_not_found' }), {
+        status: 404,
+      })
     }
 
-    const priceARS = Math.round(plan.price * USD_TO_ARS)
-    const backUrl = `${import.meta.env.PUBLIC_SITE_URL}/admin/dashboard`
+    const slug = org.slug
+    const priceARS = plan.price
+    const backUrl = `${import.meta.env.PUBLIC_SITE_URL}/${slug}/admin/setup`
     const result = await preApproval.create({
       body: {
         back_url: backUrl,

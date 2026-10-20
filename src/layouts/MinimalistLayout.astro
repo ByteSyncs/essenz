@@ -16,6 +16,13 @@ const { title, description, preloadImage } = Astro.props
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width" />
+    <meta name="theme-color" content="#f8f8f6" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
 
@@ -31,7 +38,7 @@ const { title, description, preloadImage } = Astro.props
     />
   </head>
   <body
-    class="bg-(--clr-bg) text-(--clr-ink) font-[--font-body) antialiased overflow-x-hidden"
+    class="bg-(--clr-bg) text-(--clr-ink) font-(family-name:--font-body) antialiased overflow-x-hidden"
     style="font-family: var(--font-body);"
   >
     <slot />

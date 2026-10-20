@@ -60,16 +60,37 @@ function EditorAside({ item, categories, onSave, onDelete, onClose }: EditorAsid
   const [draft, setDraft] = useState<MenuItem>({ ...item })
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [customPercent, setCustomPercent] = useState<string>('')
+  const [noteInput, setNoteInput] = useState('')
 
   useEffect(() => {
     setDraft({ ...item })
     setPendingFile(null)
     setCustomPercent('')
+    setNoteInput('')
   }, [item])
 
   const update = useCallback(<K extends keyof MenuItem>(key: K, value: MenuItem[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }))
   }, [])
+
+  const updateDetail = useCallback(
+    <K extends keyof NonNullable<MenuItem['details']>>(
+      key: K,
+      value: NonNullable<MenuItem['details']>[K],
+    ) => {
+      setDraft((prev) => ({
+        ...prev,
+        details: {
+          grams: prev.details?.grams ?? '',
+          bitterness: prev.details?.bitterness ?? '',
+          notes: prev.details?.notes ?? [],
+          sugar: prev.details?.sugar ?? '',
+          [key]: value,
+        },
+      }))
+    },
+    [],
+  )
 
   const toggleOffer = () => {
     if (draft.in_offer) {
@@ -207,19 +228,6 @@ function EditorAside({ item, categories, onSave, onDelete, onClose }: EditorAsid
               onChange={(e) => update('price', e.target.value)}
               className={fieldClass}
               min="0"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Intensidad</label>
-            <input
-              type="number"
-              value={draft.intensity ?? ''}
-              onChange={(e) =>
-                update('intensity', e.target.value === '' ? undefined : Number(e.target.value))
-              }
-              className={fieldClass}
-              min="1"
-              max="10"
             />
           </div>
         </div>

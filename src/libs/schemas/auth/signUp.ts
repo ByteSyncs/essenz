@@ -1,6 +1,6 @@
 import { z } from 'astro/zod'
 
-export const PLAN_IDS = ['basic', 'business', 'custom'] as const
+export const PLAN_IDS = ['basic', 'business'] as const
 
 const RegisterSchema = z.object({
   email: z.email({ message: 'Invalid email' }),

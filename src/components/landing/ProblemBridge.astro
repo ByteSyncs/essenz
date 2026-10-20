@@ -1,0 +1,90 @@
+---
+
+---
+
+<section
+  id="daily-work"
+  class="bg-(--clr-ink) px-5 py-20 text-white sm:px-8 sm:py-28"
+  aria-labelledby="daily-work-heading"
+>
+  <div class="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+    <div class="max-w-xl lg:sticky lg:top-28 lg:self-start">
+      <h2
+        id="daily-work-heading"
+        class="text-balance text-3xl leading-[1.1] font-semibold tracking-[-0.02em] sm:text-5xl"
+      >
+        Que la información del local no quede repartida.
+      </h2>
+      <p class="mt-5 text-base leading-relaxed text-white/75">
+        Essenz reúne la presencia que consultan tus clientes y las herramientas que usa el equipo,
+        con un alcance claro para cada plan.
+      </p>
+    </div>
+
+    <ul class="divide-y divide-white/15 border-y border-white/15">
+      <li class="reveal grid gap-3 py-7 sm:grid-cols-[3rem_0.7fr_1.3fr] sm:gap-8">
+        <span class="text-sm font-semibold tabular-nums text-(--clr-accent-light)">01</span>
+        <div>
+          <h3 class="text-lg font-semibold">Quien llega necesita encontrarte</h3>
+          <p class="mt-2 inline-block rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold">
+            Basic
+          </p>
+        </div>
+        <p class="text-sm leading-relaxed text-white/75">
+          Basic incluye un sitio público para presentar el negocio y compartir su carta digital por
+          enlace o código QR.
+        </p>
+      </li>
+      <li class="reveal grid gap-3 py-7 sm:grid-cols-[3rem_0.7fr_1.3fr] sm:gap-8">
+        <span class="text-sm font-semibold tabular-nums text-(--clr-accent-light)">02</span>
+        <div>
+          <h3 class="text-lg font-semibold">La carta cambia durante la semana</h3>
+          <p class="mt-2 inline-block rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold">
+            Basic
+          </p>
+        </div>
+        <p class="text-sm leading-relaxed text-white/75">
+          Productos, categorías y ofertas se reúnen en una carta digital, en lugar de depender de
+          publicaciones dispersas.
+        </p>
+      </li>
+      <li class="reveal grid gap-3 py-7 sm:grid-cols-[3rem_0.7fr_1.3fr] sm:gap-8">
+        <span class="text-sm font-semibold tabular-nums text-(--clr-accent-light)">03</span>
+        <div>
+          <h3 class="text-lg font-semibold">El equipo también necesita contexto</h3>
+          <p class="mt-2 inline-block rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold">
+            Business
+          </p>
+        </div>
+        <p class="text-sm leading-relaxed text-white/75">
+          Business suma pedidos, inventario, gastos y estadísticas al panel para acompañar la
+          operación diaria.
+        </p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .reveal {
+        animation: bridge-reveal linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 45%;
+      }
+
+      @keyframes bridge-reveal {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+</style>

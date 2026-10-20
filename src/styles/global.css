@@ -64,7 +64,7 @@ body {
 }
 
 section[id] {
-  scroll-margin-top: 0;
+  scroll-margin-top: 6rem;
 }
 
 h1,
@@ -91,5 +91,19 @@ html.theme-minimalist h6 {
 @media (min-width: 768px) {
   html {
     scroll-padding-top: 100px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

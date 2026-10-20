@@ -1,0 +1,226 @@
+---
+import Layout from '../../layouts/Layout.astro'
+
+interface Props {
+  theme: 'modern' | 'minimalist'
+}
+
+const { theme } = Astro.props
+const isModern = theme === 'modern'
+const themeName = isModern ? 'Moderno' : 'Minimalista'
+const description = `Vista de ejemplo de la plantilla ${themeName} de Essenz para un negocio gastronómico.`
+const dishes = [
+  {
+    category: 'Para empezar',
+    name: 'Tostada de estación',
+    detail: 'Pan de masa madre, ricota y vegetales asados.',
+    price: '$ 8.500',
+  },
+  {
+    category: 'Plato principal',
+    name: 'Pasta de campo',
+    detail: 'Pasta fresca, hongos y crema de parmesano.',
+    price: '$ 14.200',
+  },
+  {
+    category: 'Algo dulce',
+    name: 'Tarta cítrica',
+    detail: 'Crema de limón, fruta fresca y masa crocante.',
+    price: '$ 6.800',
+  },
+]
+---
+
+<Layout title={`Demo ${themeName} | Essenz`} description={description} theme={theme}>
+  <main
+    class:list={[
+      'min-h-screen',
+      isModern ? 'bg-[#f7f2e9] text-[#2c1e16]' : 'bg-[#f7f7f5] text-[#171717]',
+    ]}
+  >
+    <div class="bg-(--clr-ink) px-4 py-2.5 text-center text-xs font-medium text-white">
+      Vista de demostración · Contenido de ejemplo, personalizable para cada local
+    </div>
+
+    <header
+      class:list={[
+        'border-b px-5 py-5 sm:px-8',
+        isModern ? 'border-[#2c1e16]/10' : 'border-black/10',
+      ]}
+    >
+      <nav
+        aria-label="Navegación de la demo"
+        class="mx-auto flex max-w-6xl items-center justify-between gap-4"
+      >
+        <a href="/" class="text-lg font-bold tracking-tight" aria-label="Volver a Essenz">Essenz</a>
+        <div class="flex items-center gap-3 sm:gap-6">
+          <a href="#menu" class="hidden text-sm sm:block">Carta</a>
+          <a
+            href="/plans"
+            class:list={[
+              'rounded-full px-4 py-2 text-xs font-semibold transition sm:px-5 sm:text-sm',
+              isModern
+                ? 'bg-[#2c1e16] text-white hover:bg-[#6b3f2a]'
+                : 'bg-black text-white hover:bg-neutral-700',
+            ]}
+          >
+            Conocer Essenz
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <section class:list={['px-5 py-16 sm:px-8 sm:py-24', isModern ? 'bg-[#f7f2e9]' : 'bg-white']}>
+      <div class="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2">
+        <div>
+          <p
+            class:list={[
+              'mb-5 text-xs font-bold uppercase tracking-[0.22em]',
+              isModern ? 'text-[#8b5a2b]' : 'text-neutral-500',
+            ]}
+          >
+            Cocina de temporada · Buenos Aires
+          </p>
+          <h1
+            class:list={[
+              'max-w-xl text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl lg:text-7xl',
+              isModern ? 'font-(family-name:--font-display)' : 'font-(family-name:--font-ui)',
+            ]}
+          >
+            La Mesa
+            <span
+              class:list={[
+                'mt-2 block',
+                isModern ? 'font-normal italic text-[#8b5a2b]' : 'font-normal text-neutral-500',
+              ]}
+            >
+              cocina para compartir.
+            </span>
+          </h1>
+          <p class="mt-6 max-w-lg text-base leading-relaxed opacity-70 sm:text-lg">
+            Una muestra de cómo tu negocio puede presentar su identidad, compartir información y
+            mantener su carta digital al día.
+          </p>
+          <a
+            href="#menu"
+            class:list={[
+              'mt-8 inline-flex min-h-12 items-center justify-center px-6 text-sm font-semibold transition',
+              isModern
+                ? 'rounded-full bg-[#2c1e16] text-white hover:bg-[#6b3f2a]'
+                : 'border border-black hover:bg-black hover:text-white',
+            ]}
+          >
+            Explorar la carta
+          </a>
+        </div>
+
+        <div
+          aria-hidden="true"
+          class:list={[
+            'relative flex min-h-72 items-center justify-center overflow-hidden sm:min-h-96',
+            isModern ? 'rounded-4xl bg-[#d9c5a5]' : 'bg-[#e9e9e5]',
+          ]}
+        >
+          <div
+            class:list={[
+              'absolute size-56 rounded-full sm:size-72',
+              isModern
+                ? 'bg-[#f2e6d0] shadow-[0_20px_60px_rgba(44,30,22,0.15)]'
+                : 'border border-black/15 bg-white',
+            ]}
+          >
+          </div>
+          <div
+            class:list={[
+              'absolute size-40 rounded-full sm:size-52',
+              isModern ? 'bg-[#8b5a2b]/20' : 'border border-black/10 bg-[#f1f1ee]',
+            ]}
+          >
+          </div>
+          <span
+            class:list={[
+              'relative text-center text-xs font-bold uppercase tracking-[0.25em]',
+              isModern ? 'text-[#5d4028]' : 'text-neutral-500',
+            ]}
+          >
+            Una mesa<br />para volver
+          </span>
+          <span class="absolute bottom-5 right-5 text-xs opacity-55">Ejemplo visual</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="menu" class="scroll-mt-8 px-5 py-16 sm:px-8 sm:py-24">
+      <div class="mx-auto max-w-6xl">
+        <div class="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p
+              class:list={[
+                'mb-3 text-xs font-bold uppercase tracking-[0.2em]',
+                isModern ? 'text-[#8b5a2b]' : 'text-neutral-500',
+              ]}
+            >
+              Una carta que se mantiene al día
+            </p>
+            <h2
+              class:list={[
+                'text-4xl font-bold tracking-tight sm:text-5xl',
+                isModern ? 'font-(family-name:--font-display)' : 'font-(family-name:--font-ui)',
+              ]}
+            >
+              Un adelanto del menú
+            </h2>
+          </div>
+          <p class="max-w-sm text-sm leading-relaxed opacity-65">
+            Productos, descripciones y precios de ejemplo. El negocio administra su propia carta en
+            Essenz.
+          </p>
+        </div>
+
+        <div
+          class:list={[
+            'divide-y',
+            isModern
+              ? 'divide-[#2c1e16]/10 border-y border-[#2c1e16]/10'
+              : 'divide-black/10 border-y border-black/10',
+          ]}
+        >
+          {
+            dishes.map((dish) => (
+              <article class="grid gap-2 py-6 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-8">
+                <div>
+                  <p
+                    class:list={[
+                      'mb-2 text-[10px] font-bold uppercase tracking-[0.18em]',
+                      isModern ? 'text-[#8b5a2b]' : 'text-neutral-500',
+                    ]}
+                  >
+                    {dish.category}
+                  </p>
+                  <h3 class="text-lg font-semibold">{dish.name}</h3>
+                  <p class="mt-1 text-sm leading-relaxed opacity-65">{dish.detail}</p>
+                </div>
+                <p class="text-sm font-semibold">{dish.price}</p>
+              </article>
+            ))
+          }
+        </div>
+        <p class="mt-6 text-xs opacity-50">
+          Precios y productos ilustrativos para esta demostración.
+        </p>
+      </div>
+    </section>
+
+    <footer
+      class:list={[
+        'px-5 py-10 text-center text-sm sm:px-8',
+        isModern ? 'bg-[#2c1e16] text-white/70' : 'bg-black text-white/65',
+      ]}
+    >
+      <p class="font-semibold text-white">La Mesa · Demo de Essenz</p>
+      <p class="mt-2">Una experiencia digital para presentar tu negocio.</p>
+      <a href="/plans" class="mt-5 inline-flex underline underline-offset-4">Ver planes de Essenz</a
+      >
+    </footer>
+  </main>
+</Layout>

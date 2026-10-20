@@ -1,28 +1,72 @@
 ---
 import '../styles/global.css'
 import Nav from '../components/react/Nav.tsx'
-import Hero from '../components/react/Hero.tsx'
-import Testimonials from '../components/react/Testimonials.tsx'
-import Pricing from '../components/react/Pricing.tsx'
+import Hero from '../components/landing/Hero.astro'
+import ProductOverview from '../components/landing/ProductOverview.astro'
+import ProblemBridge from '../components/landing/ProblemBridge.astro'
+import PlanCards from '../components/landing/PlanCards.astro'
 import Demos from '../components/react/Demos.tsx'
-import CtaFinal from '../components/react/CtaFinal.tsx'
 import Footer from '../components/react/Footer.tsx'
 import Layout from '../layouts/Layout.astro'
 import BackToTop from '../components/react/BackToTop'
 ---
 
 <Layout
-  title="Essenz | La identidad digital que tu café merece"
-  description="Lleva tu cafetería al siguiente nivel con el ecosistema de software de ByteSyncs. Despliegue profesional en 48hs."
+  title="Essenz | Gestión y menú digital para negocios gastronómicos"
+  description="Essenz reúne el sitio y la carta digital para tus clientes con herramientas para gestionar pedidos, inventario, gastos y ventas en cafeterías, restaurantes y bares."
 >
   <Nav client:load />
-  <BackToTop client:load />
+  <BackToTop client:visible />
   <main>
-    <Hero client:load />
-    <Testimonials client:visible />
-    <Demos client:load />
-    <Pricing client:visible />
-    <CtaFinal client:visible />
+    <Hero />
+    <ProductOverview />
+    <ProblemBridge />
+    <Demos client:visible />
+    <PlanCards />
+    <section
+      id="contact"
+      class="scroll-mt-24 px-5 py-12 sm:px-8 sm:py-20"
+      aria-labelledby="contact-heading"
+    >
+      <div
+        class="relative mx-auto max-w-5xl overflow-hidden rounded-4xl bg-(--clr-ink) px-6 py-14 text-center text-white sm:px-12 sm:py-20"
+      >
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute -right-20 -top-36 size-96 rounded-full bg-(--clr-accent)/20 blur-3xl"
+        >
+        </div>
+        <div class="relative mx-auto max-w-2xl">
+          <p class="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-(--clr-accent-light)">
+            Una operación más ordenada empieza por verla en conjunto
+          </p>
+          <h2
+            id="contact-heading"
+            class="text-4xl leading-tight font-bold tracking-tight sm:text-5xl"
+          >
+            Elegí cómo empezar con Essenz.
+          </h2>
+          <p class="mx-auto mt-5 max-w-xl leading-relaxed text-white/65 sm:text-lg">
+            Compará el sitio y la carta de Basic con las herramientas de operación de Business. Para
+            necesidades a medida, escribinos.
+          </p>
+          <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+            <a
+              href="/plans"
+              class="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold text-(--clr-ink) transition hover:bg-[#f0e4d3] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              Comparar planes
+            </a>
+            <a
+              href="mailto:info@bytesyncs.com?subject=Consulta%20sobre%20Essenz"
+              class="inline-flex min-h-12 items-center justify-center rounded-full border border-white/25 px-7 text-sm font-semibold text-white transition hover:border-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              Consultar por Custom
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
-  <Footer client:visible />
+  <Footer />
 </Layout>

@@ -46,8 +46,6 @@ if (profile?.is_setup_complete) {
 const sub = Array.isArray(org?.subscriptions) ? org.subscriptions[0] : org?.subscriptions
 
 if (sub?.status !== 'active') return Astro.redirect('/')
-
-const planType = sub?.plan_type
 ---
 
 <Layout
@@ -67,12 +65,10 @@ const planType = sub?.plan_type
 
     <SetupWizard
       client:load
-      urlHost={url!}
       slug={slug!}
       userId={user.id}
       name={org?.name}
       organizationId={profile?.organization_id}
-      planType={planType}
     />
   </main>
 </Layout>

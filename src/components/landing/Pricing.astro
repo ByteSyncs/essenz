@@ -1,0 +1,348 @@
+---
+import { PLANS } from '../../constants/suscriptions'
+
+const features = [
+  {
+    title: 'Sitio web',
+    description: 'Presentá tu negocio con una página propia y tu identidad visual.',
+    icon: 'globe',
+  },
+  {
+    title: 'Menú digital',
+    description: 'Administrá categorías, productos, precios, imágenes y ofertas.',
+    icon: 'utensils',
+  },
+  {
+    title: 'Código QR',
+    description: 'Facilitá el acceso a tu menú desde el celular de tus clientes.',
+    icon: 'qr-code',
+  },
+  {
+    title: 'Pedidos y comandas',
+    description: 'Organizá los pedidos y seguí sus estados desde un solo lugar.',
+    icon: 'clipboard-list',
+  },
+  {
+    title: 'Inventario y stock',
+    description: 'Controlá tus insumos y mantené un seguimiento de las existencias.',
+    icon: 'package',
+  },
+  {
+    title: 'Gastos y estadísticas',
+    description: 'Consultá los datos de tu negocio para entender mejor su actividad.',
+    icon: 'chart',
+  },
+]
+
+const plans = [
+  {
+    ...PLANS.basic,
+    description: 'Todo lo necesario para administrar un negocio gastronómico.',
+    branchLabel: '1 sucursal',
+    productLimit: '100 productos de menú',
+    inventoryLabel: 'Capacidad de inventario básica',
+    featured: false,
+    href: `/auth/sign-up?plan=${PLANS.basic.id}`,
+  },
+  {
+    ...PLANS.business,
+    description: 'Más capacidad para negocios en crecimiento y equipos con varios locales.',
+    branchLabel: 'Hasta 5 sucursales',
+    productLimit: '1.000 productos por sucursal',
+    inventoryLabel: 'Mayor capacidad de inventario',
+    featured: true,
+    href: `/auth/sign-up?plan=${PLANS.business.id}`,
+  },
+]
+---
+
+<section id="plans" class="scroll-mt-24 px-5 py-5 sm:px-8 sm:py-7" aria-labelledby="plans-heading">
+  <div class="mx-auto max-w-6xl">
+    <header class="mx-auto max-w-3xl text-center">
+      <h1
+        id="plans-heading"
+        class="mt-6 text-3xl leading-tight font-semibold tracking-tight text-(--clr-ink) sm:text-4xl lg:text-5xl"
+      >
+        Todo tu negocio, en un solo lugar.
+      </h1>
+
+      <p class="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-stone-600 sm:text-lg">
+        Todas las herramientas para gestionar tu negocio gastronómico. Elegí la capacidad que
+        necesitás y empezá a trabajar con Essenz.
+      </p>
+    </header>
+
+    <div class="mt-12 grid gap-4 sm:grid-cols-2 sm:gap-6 lg:mt-16 lg:gap-8">
+      {
+        plans.map((plan) => (
+          <article
+            class:list={[
+              'relative flex min-w-0 flex-col rounded-3xl border bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-8',
+              plan.featured
+                ? 'border-emerald-800/40 ring-1 ring-emerald-800/10'
+                : 'border-stone-200',
+            ]}
+          >
+            {plan.featured && (
+              <span class="absolute -top-3 left-6 rounded-full bg-emerald-800 px-4 py-1.5 text-xs font-bold tracking-wide text-white sm:left-8">
+                PARA NEGOCIOS EN CRECIMIENTO
+              </span>
+            )}
+
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm font-bold tracking-[0.16em] text-emerald-800 uppercase">
+                {plan.name.replace('Plan ', '')}
+              </span>
+
+              <span class="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-700">
+                {plan.branchLabel}
+              </span>
+            </div>
+
+            <p class="mt-4 min-h-12 text-sm leading-relaxed text-stone-600">{plan.description}</p>
+
+            <div class="mt-6">
+              <div class="flex flex-wrap items-baseline gap-x-2">
+                <span class="text-4xl font-bold tracking-tight text-emerald-800 sm:text-5xl">
+                  ${plan.price?.toLocaleString('es-AR')}
+                </span>
+                <span class="text-sm text-stone-500">ARS / mes</span>
+              </div>
+            </div>
+
+            <div class="my-6 h-px bg-stone-200" />
+
+            <div>
+              <h2 class="text-sm font-semibold text-(--clr-ink)">Capacidad incluida</h2>
+
+              <ul class="mt-4 space-y-4">
+                <li class="flex items-start gap-3">
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
+                    <svg viewBox="0 0 20 20" fill="none" class="size-3.5" aria-hidden="true">
+                      <path
+                        d="m4 10 4 4 8-8"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <div>
+                    <p class="text-sm font-medium text-(--clr-ink)">{plan.branchLabel}</p>
+                    <p class="mt-1 text-sm text-stone-500">
+                      Gestioná tus locales desde una misma cuenta.
+                    </p>
+                  </div>
+                </li>
+
+                <li class="flex items-start gap-3">
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
+                    <svg viewBox="0 0 20 20" fill="none" class="size-3.5" aria-hidden="true">
+                      <path
+                        d="m4 10 4 4 8-8"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <div>
+                    <p class="text-sm font-medium text-(--clr-ink)">{plan.productLimit}</p>
+                    <p class="mt-1 text-sm text-stone-500">Administrá la carta de cada sucursal.</p>
+                  </div>
+                </li>
+
+                <li class="flex items-start gap-3">
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
+                    <svg viewBox="0 0 20 20" fill="none" class="size-3.5" aria-hidden="true">
+                      <path
+                        d="m4 10 4 4 8-8"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <div>
+                    <p class="text-sm font-medium text-(--clr-ink)">{plan.inventoryLabel}</p>
+                    <p class="mt-1 text-sm text-stone-500">Controlá los insumos de tu operación.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="mt-auto pt-8">
+              <a
+                href={plan.href}
+                class:list={[
+                  'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-center text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-800',
+                  plan.featured
+                    ? 'bg-emerald-800 text-white hover:bg-emerald-900'
+                    : 'bg-(--clr-ink) text-white hover:bg-emerald-800',
+                ]}
+              >
+                Elegir {plan.name.replace('Plan ', '')}
+                <span aria-hidden="true">→</span>
+              </a>
+              <p class="mt-3 text-center text-xs text-stone-500">
+                Suscripción mensual en pesos argentinos.
+              </p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <section class="mt-12 sm:mt-16" aria-labelledby="features-heading">
+      <div class="text-center">
+        <span class="text-xs font-semibold tracking-[0.16em] text-emerald-800 uppercase">
+          Incluido en ambos planes
+        </span>
+        <h2
+          id="features-heading"
+          class="mt-3 text-2xl font-semibold tracking-tight text-(--clr-ink) sm:text-3xl"
+        >
+          Todas las herramientas. Sin funciones bloqueadas.
+        </h2>
+        <p class="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-stone-600 sm:text-base">
+          Accedé a las funcionalidades de Essenz con cualquiera de los planes. Solo cambia la
+          capacidad que necesitás para tu negocio.
+        </p>
+      </div>
+
+      <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          features.map((feature) => (
+            <article class="rounded-2xl border border-stone-200/80 bg-white p-5 sm:p-6">
+              <div class="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800">
+                {feature.icon === 'globe' && (
+                  <svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" />
+                    <path
+                      d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                  </svg>
+                )}
+                {feature.icon === 'utensils' && (
+                  <svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true">
+                    <path
+                      d="M7 3v7m-3-7v4a3 3 0 0 0 6 0V3M7 10v11M17 3v18m0-18c3 2 4 5 4 8h-4"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                )}
+                {feature.icon === 'qr-code' && (
+                  <svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true">
+                    <rect
+                      x="3"
+                      y="3"
+                      width="7"
+                      height="7"
+                      rx="1"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <rect
+                      x="14"
+                      y="3"
+                      width="7"
+                      height="7"
+                      rx="1"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <rect
+                      x="3"
+                      y="14"
+                      width="7"
+                      height="7"
+                      rx="1"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <path
+                      d="M14 14h3v3h-3zm4 4h3v3h-3zm0-4h3m-7 4v3"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                )}
+                {feature.icon === 'clipboard-list' && (
+                  <svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true">
+                    <rect
+                      x="5"
+                      y="4"
+                      width="14"
+                      height="17"
+                      rx="2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+                    <path
+                      d="M9 4.5V3h6v1.5M9 10h6m-6 4h6m-6 4h3"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                )}
+                {feature.icon === 'package' && (
+                  <svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true">
+                    <path
+                      d="m12 3 9 5v8l-9 5-9-5V8l9-5Z"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="m3 8 9 5 9-5m-9 5v8m-4-16 9 5"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                )}
+                {feature.icon === 'chart' && (
+                  <svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true">
+                    <path
+                      d="M4 20V4m0 16h17M8 15l4-4 3 2 5-6"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                )}
+              </div>
+
+              <h3 class="mt-4 text-base font-semibold text-(--clr-ink)">{feature.title}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-stone-600">{feature.description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </section>
+
+    <div class="mx-auto mt-10 max-w-3xl text-center">
+      <p class="text-sm leading-relaxed text-stone-500">
+        ¿Tenés dudas sobre qué plan elegir? Escribinos a
+        <a
+          href="mailto:info@bytesyncs.com?subject=Consulta%20por%20Essenz"
+          class="font-semibold text-emerald-800 underline decoration-emerald-800/30 underline-offset-4 hover:decoration-emerald-800"
+        >
+          {' '}info@bytesyncs.com{' '}
+        </a>
+        y te ayudamos a encontrar la opción adecuada.
+      </p>
+    </div>
+  </div>
+</section>

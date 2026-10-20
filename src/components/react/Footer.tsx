@@ -12,13 +12,13 @@ export default function Footer() {
             <div className="mb-8">
               <img
                 src={logo.src}
-                alt="ByteSyncs Logo"
+                alt="Essenz"
                 className="w-30 h-auto brightness-0 invert opacity-90"
               />
             </div>
             <p className="text-gray-400 text-lg max-w-sm leading-relaxed font-light">
-              Elevando el estándar operativo y digital para la industria gastronómica global a
-              través de ingeniería de precisión.
+              Sitio y menú digital para tus clientes. Herramientas para que tu equipo gestione el
+              trabajo cotidiano del local.
             </p>
           </div>
 
@@ -29,15 +29,15 @@ export default function Footer() {
             <ul className="space-y-4 text-sm list-none p-0">
               <li>
                 <a
-                  href="#demos"
+                  href="/#templates"
                   className="text-gray-400 hover:text-white transition-colors duration-300"
                 >
-                  Demos Interactivos
+                  Plantillas visuales
                 </a>
               </li>
               <li>
                 <a
-                  href="#plans"
+                  href="/plans"
                   className="text-gray-400 hover:text-white transition-colors duration-300"
                 >
                   Suscripciones
@@ -53,10 +53,10 @@ export default function Footer() {
             <ul className="space-y-4 text-sm list-none p-0">
               <li>
                 <a
-                  href="https://linkedin.com"
+                  href="mailto:info@bytesyncs.com"
                   className="text-gray-400 hover:text-white transition-colors duration-300"
                 >
-                  LinkedIn
+                  Contacto
                 </a>
               </li>
               <li>
@@ -64,7 +64,7 @@ export default function Footer() {
                   href="mailto:info@bytesyncs.com"
                   className="text-gray-400 hover:text-white transition-colors duration-300"
                 >
-                  Soporte Ejecutivo
+                  Escribir al equipo
                 </a>
               </li>
             </ul>
@@ -72,20 +72,20 @@ export default function Footer() {
         </div>
 
         <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex gap-8 text-[10px] tracking-[0.2em] font-medium text-gray-600">
-            <a href="#" className="hover:text-gray-400 transition-colors">
-              TÉRMINOS
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-[10px] tracking-[0.2em] font-medium text-gray-600">
+            <a href="/#platform" className="hover:text-gray-400 transition-colors">
+              PLATAFORMA
             </a>
-            <a href="#" className="hover:text-gray-400 transition-colors">
-              PRIVACIDAD
+            <a href="/plans" className="hover:text-gray-400 transition-colors">
+              PLANES
             </a>
-            <a href="#" className="hover:text-gray-400 transition-colors">
-              COOKIES
+            <a href="/#contact" className="hover:text-gray-400 transition-colors">
+              CONTACTO
             </a>
           </div>
 
           <div className="text-[10px] text-gray-600 font-bold tracking-widest uppercase">
-            © 2026 ESSENZ — EL FUTURO ESTÁ EN TU ELECCIÓN
+            © 2026 ESSENZ — TECNOLOGÍA PARA LOCALES GASTRONÓMICOS
           </div>
         </div>
       </div>

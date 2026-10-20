@@ -1,0 +1,426 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import DemoCta from '../DemoContact.astro'
+import { ESSENZ_URL } from '../../../constants/site'
+
+const supabase = Astro.locals.supabase
+const { data: tenant, error: organizationError } = await supabase
+  .from('organizations')
+  .select('id, name, tagline, logo_url')
+  .eq('slug', 'demo-minimalist')
+  .maybeSingle()
+
+if (organizationError) {
+  console.error('[demo-minimalist] organization error:', organizationError)
+  throw new Error('Could not load the minimalist demo organization.', {
+    cause: organizationError,
+  })
+}
+
+if (!tenant) return Astro.redirect('/404')
+
+const { data: categories, error: categoriesError } = await supabase
+  .from('categories')
+  .select(
+    `
+    id,
+    title,
+    display_order,
+    products (
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      in_offer,
+      offer_percent,
+      is_active,
+      display_order
+    )
+  `,
+  )
+  .eq('organization_id', tenant.id)
+  .eq('products.is_active', true)
+  .order('display_order', { ascending: true })
+  .order('display_order', { referencedTable: 'products', ascending: true })
+
+if (categoriesError) {
+  console.error('[demo-minimalist] products error:', categoriesError)
+  throw new Error('Could not load the minimalist demo menu.', { cause: categoriesError })
+}
+
+const groups = (categories ?? [])
+  .map((category) => ({
+    id: category.id,
+    title: category.title,
+    items: [...(category.products ?? [])]
+      .filter((product) => product.is_active)
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
+  }))
+  .filter((group) => group.items.length > 0)
+
+const products = groups.flatMap((group) =>
+  group.items.map((product) => ({ ...product, category: group.title })),
+)
+const ranked = [...products].sort(
+  (a, b) => Number(Boolean(b.image_url)) - Number(Boolean(a.image_url)),
+)
+const featuredProduct = ranked.find((product) => product.image_url)
+const others = ranked.filter((product) => product.id !== featuredProduct?.id)
+const previewProducts = (others.length >= 3 ? others : ranked).slice(0, 3)
+
+const getFinalPrice = (product: {
+  price: number | string
+  in_offer?: boolean | null
+  offer_percent?: number | null
+}) => {
+  const price = Number(product.price)
+  return product.in_offer && product.offer_percent
+    ? price * (1 - product.offer_percent / 100)
+    : price
+}
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(price)
+---
+
+<Layout
+  title={`${tenant.name} | Sitio oficial`}
+  description={tenant.tagline ??
+    `Conocé ${tenant.name}, consultá su carta actualizada y encontrá la información para visitar el local.`}
+  theme="minimalist"
+  preloadImage={featuredProduct?.image_url}
+>
+  <main class="bg-[#f7f7f5] text-[#171717]">
+    <div
+      class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-black px-5 py-2.5 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-white/70"
+    >
+      <span>Demo de Essenz / datos de ejemplo</span>
+      <a
+        href={ESSENZ_URL}
+        class="press text-white underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      >
+        Crear mi sitio ↗
+      </a>
+    </div>
+
+    <header class="glass-bar sticky top-0 z-30 border-b border-black/10 px-5 py-3 sm:px-10">
+      <nav
+        aria-label={`Navegación de ${tenant.name}`}
+        class="mx-auto flex max-w-7xl items-center justify-between gap-4"
+      >
+        <a
+          href="/demo-minimalist"
+          class="press flex min-h-11 items-center gap-3 text-xl font-black uppercase tracking-[-0.04em] sm:text-2xl"
+        >
+          <span class="size-3 bg-black"></span>{tenant.name}
+        </a>
+        <div class="flex items-center gap-2 sm:gap-4">
+          <a
+            href="/demo-minimalist/menu"
+            class="press inline-flex min-h-11 items-center px-3 text-xs font-bold uppercase tracking-[0.12em] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+          >
+            Carta
+          </a>
+          <a
+            href={ESSENZ_URL}
+            class="press inline-flex min-h-11 items-center bg-black px-5 text-xs font-bold uppercase tracking-[0.12em] text-white hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+          >
+            Crear el mío <span class="ml-2" aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <section class="grid border-b-2 border-black lg:min-h-[78svh] lg:grid-cols-[1fr_0.9fr]">
+      <div class="flex flex-col justify-between px-5 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+        <p
+          class="rise text-[10px] font-bold uppercase tracking-[0.2em] text-black/45"
+          style="--i:0"
+        >
+          {tenant.tagline ?? 'Carta y datos del local'}
+        </p>
+        <div class="py-10">
+          <h1
+            class="minimalist-title max-w-3xl text-6xl leading-[0.86] font-black uppercase tracking-[-0.06em] sm:text-7xl xl:text-8xl"
+          >
+            {tenant.name}<span class="text-[#b7a78d]">.</span>
+          </h1>
+          <p
+            class="rise mt-7 max-w-md text-base leading-relaxed text-black/65 sm:text-lg"
+            style="--i:2"
+          >
+            Mirá la carta completa y elegí antes de llegar.
+          </p>
+          <div class="rise mt-8 flex flex-wrap gap-x-6 gap-y-3" style="--i:3">
+            <a
+              href="/demo-minimalist/menu"
+              class="press inline-flex min-h-12 items-center border-b-2 border-black text-sm font-bold uppercase tracking-[0.12em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
+            >
+              Abrir la carta <span class="ml-5 text-lg" aria-hidden="true">↗</span>
+            </a>
+            <a
+              href="#index"
+              class="press inline-flex min-h-12 items-center text-sm font-bold uppercase tracking-[0.12em] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
+            >
+              Ver categorías
+            </a>
+          </div>
+        </div>
+        <div
+          class="flex items-end justify-between border-t border-black/15 pt-5 text-[10px] font-bold uppercase tracking-[0.14em] text-black/50"
+        >
+          <span>{products.length} productos<br />en {groups.length} categorías</span>
+          <span class="text-right">{tenant.name}<br />Essenz demo</span>
+        </div>
+      </div>
+      <figure class="relative min-h-80 overflow-hidden bg-[#dfded8] lg:min-h-0">
+        {
+          featuredProduct?.image_url && (
+            <img
+              src={featuredProduct.image_url}
+              alt={featuredProduct.name}
+              width="1800"
+              height="1400"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              class="minimalist-feature-image absolute inset-0 size-full object-cover grayscale"
+            />
+          )
+        }
+        <span
+          class="absolute bottom-5 left-5 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em]"
+          >{featuredProduct?.name ?? tenant.name}</span
+        >
+        <figcaption class="sr-only">
+          {featuredProduct?.name ?? `Imagen de ${tenant.name}`}
+        </figcaption>
+      </figure>
+    </section>
+
+    {
+      groups.length > 0 && (
+        <section id="index" class="scroll-mt-20 bg-white px-5 py-14 sm:px-10 sm:py-20">
+          <div class="mx-auto max-w-7xl">
+            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-black/45">Índice</p>
+            <ul class="mt-6 divide-y-2 divide-black/15 border-y-2 border-black">
+              {groups.map((group, index) => (
+                <li>
+                  <a
+                    href={`/demo-minimalist/menu#category-${group.id}`}
+                    class="minimalist-row grid min-h-16 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-4 px-3 py-4 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black"
+                  >
+                    <span class="text-xs font-bold tabular-nums opacity-45">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span class="truncate text-2xl font-black uppercase tracking-[-0.04em] sm:text-4xl">
+                      {group.title}
+                    </span>
+                    <span class="text-[10px] font-bold uppercase tracking-[0.14em] opacity-60">
+                      {group.items.length} <span aria-hidden="true">↗</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )
+    }
+
+    <section id="selection" class="scroll-mt-20 px-5 py-16 sm:px-10 sm:py-20">
+      <div
+        class="mx-auto mb-10 flex max-w-7xl flex-col gap-5 border-b-2 border-black pb-5 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-black/45">En la carta</p>
+          <h2
+            class="mt-4 text-4xl leading-[0.92] font-black uppercase tracking-[-0.05em] sm:text-6xl"
+          >
+            Tres para empezar.
+          </h2>
+        </div>
+        <a
+          href="/demo-minimalist/menu"
+          class="press inline-flex min-h-11 items-center gap-4 border-b border-black pb-2 text-xs font-bold uppercase tracking-[0.15em] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black"
+        >
+          Ver carta y precios <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+      {
+        previewProducts.length ? (
+          <ul class="mx-auto grid max-w-7xl gap-x-8 md:grid-cols-2">
+            {previewProducts.map((product, index) => {
+              const finalPrice = getFinalPrice(product)
+              const hasOffer = Boolean(product.in_offer && product.offer_percent)
+
+              return (
+                <li class="rise min-w-0 border-b border-black/20" style={`--i:${index}`}>
+                  <a
+                    href="/demo-minimalist/menu"
+                    class="minimalist-product press group grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-4 py-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                    aria-label={`Ver ${product.name} en la carta`}
+                  >
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        width="360"
+                        height="360"
+                        loading="lazy"
+                        decoding="async"
+                        class="minimalist-product-image aspect-square w-full object-cover grayscale"
+                      />
+                    ) : (
+                      <span class="flex aspect-square items-center justify-center bg-black text-xl font-bold text-white">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    )}
+                    <span class="min-w-0">
+                      <span class="block text-[10px] font-bold uppercase tracking-[0.16em] text-black/45">
+                        {product.category}
+                      </span>
+                      <span class="mt-2 block truncate text-lg font-bold uppercase">
+                        {product.name}
+                      </span>
+                      {product.description && (
+                        <span class="mt-1 block line-clamp-2 text-sm leading-relaxed text-black/60">
+                          {product.description}
+                        </span>
+                      )}
+                    </span>
+                    <span class="text-right">
+                      <span class="block text-base font-bold tabular-nums">
+                        {formatPrice(finalPrice)}
+                      </span>
+                      {hasOffer && (
+                        <span class="mt-1 block text-xs tabular-nums text-black/40 line-through">
+                          {formatPrice(Number(product.price))}
+                        </span>
+                      )}
+                    </span>
+                  </a>
+                </li>
+              )
+            })}
+          </ul>
+        ) : (
+          <p class="mx-auto max-w-7xl text-sm text-black/55">
+            El negocio todavía no publicó productos en su carta.
+          </p>
+        )
+      }
+    </section>
+
+    <DemoCta theme="minimalist" name={tenant.name} />
+
+    <footer
+      class="flex flex-col gap-3 border-t border-black/10 px-5 py-7 text-[10px] uppercase tracking-[0.12em] text-black/50 sm:flex-row sm:justify-between sm:px-10"
+    >
+      <span>{tenant.name} · Demo de Essenz · Datos de ejemplo</span>
+      <nav aria-label={`Más información de ${tenant.name}`} class="flex flex-wrap gap-x-5 gap-y-2">
+        <a href="/demo-minimalist/menu" class="font-bold underline underline-offset-4">La carta</a>
+        <a href={ESSENZ_URL} class="font-bold underline underline-offset-4">Conocer Essenz</a>
+      </nav>
+    </footer>
+  </main>
+
+  <style>
+    :global(html) {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    a {
+      touch-action: manipulation;
+    }
+
+    .press {
+      transition:
+        transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+        background-color 160ms ease,
+        border-color 160ms ease;
+    }
+
+    .press:active {
+      transform: scale(0.97);
+    }
+
+    .glass-bar {
+      background: rgba(247, 247, 245, 0.82);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      backdrop-filter: blur(16px) saturate(160%);
+    }
+
+    .minimalist-row {
+      transition:
+        background-color 160ms ease,
+        color 160ms ease;
+    }
+
+    .minimalist-row:active {
+      background: #000;
+      color: #fff;
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+      .glass-bar {
+        background: #f7f7f5;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :global(html) {
+        scroll-behavior: smooth;
+      }
+
+      .rise {
+        opacity: 1;
+        transform: translateY(0);
+        transition:
+          opacity 380ms cubic-bezier(0.23, 1, 0.32, 1),
+          transform 380ms cubic-bezier(0.23, 1, 0.32, 1);
+        transition-delay: calc(min(var(--i, 0), 8) * 50ms);
+      }
+
+      @starting-style {
+        .rise {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+
+      .minimalist-title {
+        clip-path: inset(0);
+        transition: clip-path 450ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      @starting-style {
+        .minimalist-title {
+          clip-path: inset(0 100% 0 0);
+        }
+      }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .minimalist-row:hover {
+        background: #000;
+        color: #fff;
+      }
+
+      .minimalist-product-image {
+        transition: filter 160ms ease;
+      }
+
+      .minimalist-product:hover .minimalist-product-image {
+        filter: grayscale(0);
+      }
+    }
+  </style>
+</Layout>

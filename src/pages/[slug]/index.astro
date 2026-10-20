@@ -1,88 +1,97 @@
 ---
-import supabase from '../../libs/supabase'
 import Layout from '../../layouts/Layout.astro'
 import Header from '../../components/Header.astro'
 import Hero from '../../components/Hero.astro'
 import CoffeeGrid from '../../components/CoffeeGrid.astro'
-import InteractiveSection from '../../components/InteractiveSection.astro'
-import Reviews from '../../components/Reviews.astro'
 import Contact from '../../components/Contact.astro'
 import Footer from '../../components/Footer.astro'
+import { getSafeBrandStyles } from '../../libs/brandStyles'
 
 const { slug } = Astro.params
-const cleanSlug = slug?.toString().trim().toLowerCase()
+const cleanSlug = slug?.trim().toLowerCase()
+const supabase = Astro.locals.supabase
 
 const { data: tenant, error } = await supabase
   .from('organizations')
   .select(
     `
-    *,
+    id,
+    slug,
+    name,
+    theme,
+    tagline,
+    logo_url,
+    brand_colors,
     products (
       id,
-      name, 
+      name,
       description,
       price,
       image_url,
-      intensity,
-      details,
+      in_offer,
+      offer_percent,
+      is_active,
       display_order
+    ),
+    organization_settings (
+      address,
+      city,
+      contact_phone,
+      contact_email,
+      opening_hours,
+      instagram_url,
+      facebook_url,
+      show_menu_images
     )
   `,
   )
   .eq('slug', cleanSlug)
-  .single()
+  .eq('products.is_active', true)
+  .maybeSingle()
 
-if (error || !tenant) {
-  return Astro.redirect('/404')
-}
+if (error || !tenant) return Astro.redirect('/404')
 
-const { theme, name, tagline, logo_url, brand_colors, products } = tenant
-
-const title = `${name} | ${tagline || 'Cafe de Especialidad'}`
+const settings = Array.isArray(tenant.organization_settings)
+  ? tenant.organization_settings[0]
+  : tenant.organization_settings
+const products = (tenant.products ?? [])
+  .filter((product) => product.is_active)
+  .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+const theme = tenant.theme === 'minimalist' ? 'minimalist' : 'modern'
+const showMenuImages = settings?.show_menu_images ?? true
+const title = `${tenant.name} | ${tenant.tagline || 'Sitio oficial'}`
 const description =
-  tagline || `Disfrutá de la mejor experiencia en ${name}. Calidad y sabor en cada taza.`
-
-const dynamicStyles = brand_colors
-  ? Object.entries(brand_colors)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('; ')
-  : ''
+  tenant.tagline ||
+  `Conocé ${tenant.name}, consultá su carta actualizada y encontrá la información para visitar el local.`
+const dynamicStyles = getSafeBrandStyles(tenant.brand_colors)
 ---
 
-<Layout title={title} description={description} theme={theme} preloadImage={logo_url}>
-  <style set:html={`:root { ${dynamicStyles} }`}></style>
-  <Header theme={theme} logo={logo_url} name={name} tagline={tagline} />
+<Layout title={title} description={description} theme={theme} preloadImage={tenant.logo_url}>
+  {dynamicStyles && <style set:html={`:root { ${dynamicStyles} }`} />}
+  <Header
+    theme={theme}
+    logo={tenant.logo_url}
+    name={tenant.name}
+    tagline={tenant.tagline}
+    city={settings?.city}
+    phone={settings?.contact_phone}
+    openingHours={settings?.opening_hours}
+  />
 
   <main>
-    <Hero theme={theme} />
-    <CoffeeGrid theme={theme} dataProducts={products} />
-    <InteractiveSection theme={theme} />
-    <Reviews />
-    <Contact />
+    <Hero theme={theme} name={tenant.name} tagline={tenant.tagline} />
+    <CoffeeGrid theme={theme} dataProducts={products} showImages={showMenuImages} />
+    <Contact
+      theme={theme}
+      address={settings?.address}
+      city={settings?.city}
+      phone={settings?.contact_phone}
+      email={settings?.contact_email}
+      openingHours={settings?.opening_hours}
+      instagramUrl={settings?.instagram_url}
+      facebookUrl={settings?.facebook_url}
+    />
   </main>
 
-  <Footer />
+  <Footer theme={theme} name={tenant.name} />
 </Layout>
-
-<style>
-  .review-item.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-</style>
-
-<script>
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) {
-          e.target.classList.remove('opacity-0', 'translate-y-4')
-          e.target.classList.add('opacity-100', 'translate-y-0')
-          observer.unobserve(e.target)
-        }
-      })
-    },
-    { threshold: 0.1 },
-  )
-  document.querySelectorAll('.review-item').forEach((el) => observer.observe(el))
-</script>

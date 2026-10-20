@@ -5,8 +5,9 @@ export type PlansMeta = {
   name: string
   price: number | null
   currency: string | null
+  maxBranches: number | null
+  maxProducts: number | null
   lemon_variant_id: string | null
-  mp_plan_id: string | null
   features: Array<string>
 }
 

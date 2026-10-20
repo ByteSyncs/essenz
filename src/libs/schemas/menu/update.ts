@@ -1,16 +1,27 @@
 import { z } from 'astro/zod'
 
-const updateMenuItemSchema = z.object({
-  name: z.string().optional(),
-  tagline: z.string().optional(),
-  logo: z.string().optional(),
-  logo_updated_at: z.string().optional(),
+const logoUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((value) => {
+    try {
+      return ['http:', 'https:'].includes(new URL(value).protocol)
+    } catch {
+      return false
+    }
+  }, 'El logo debe tener una URL http o https válida')
+
+const updateOrganizationSchema = z.object({
+  name: z.string().trim().min(1).max(60).optional(),
+  tagline: z.string().trim().max(100).optional(),
+  logo: logoUrl.nullable().optional(),
 })
 
-export type UpdateMenuItem = z.infer<typeof updateMenuItemSchema>
+export type UpdateOrganization = z.infer<typeof updateOrganizationSchema>
 
 export function validateUpdateMenu(input: unknown) {
-  const result = updateMenuItemSchema.safeParse(input)
+  const result = updateOrganizationSchema.safeParse(input)
   if (!result.success) {
     return {
       success: false as const,

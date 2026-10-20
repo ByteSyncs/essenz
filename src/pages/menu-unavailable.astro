@@ -1,0 +1,119 @@
+---
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout title="Menú no disponible" description="El menú está temporalmente desactivado.">
+  <main
+    class="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-6 py-24 overflow-hidden"
+    style="background-color: var(--clr-bg);"
+  >
+    <div
+      class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+      style="opacity: 0.03;"
+    >
+      <span
+        class="text-[30vw] font-bold leading-none select-none tracking-tighter"
+        style="font-family: var(--font-display); color: var(--clr-ink);"
+      >
+        PAUSA
+      </span>
+    </div>
+
+    <div class="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
+      <div
+        class="relative w-40 h-40 md:w-48 md:h-48 mb-10 group transition-transform duration-300 hover:-translate-y-2 cursor-default"
+      >
+        <div
+          class="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-start opacity-0 group-hover:opacity-60 transition-opacity duration-500"
+          style="color: var(--clr-ink); font-family: var(--font-display);"
+        >
+          <span
+            class="text-lg animate-bounce"
+            style="animation-delay: 600ms; transform: translateX(25px);">z</span
+          >
+          <span
+            class="text-2xl animate-bounce"
+            style="animation-delay: 300ms; transform: translateX(10px);">Z</span
+          >
+          <span
+            class="text-4xl animate-bounce"
+            style="animation-delay: 0ms; transform: translateX(-10px);">Z</span
+          >
+        </div>
+
+        <svg
+          viewBox="0 0 120 120"
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-full h-full drop-shadow-xl"
+          style="color: var(--clr-accent);"
+        >
+          <path
+            d="M 85 45 C 115 45, 115 80, 85 80"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="12"
+            stroke-linecap="round"></path>
+
+          <path d="M 20 25 L 100 25 L 90 95 C 88 110, 32 110, 30 95 Z" fill="currentColor"></path>
+
+          <ellipse cx="60" cy="25" rx="40" ry="10" fill="var(--clr-ink-dark)"></ellipse>
+          <ellipse cx="60" cy="25" rx="36" ry="7" fill="var(--clr-ink)"></ellipse>
+
+          <path
+            d="M 40 60 Q 45 65 50 60"
+            fill="none"
+            stroke="var(--clr-bg)"
+            stroke-width="3"
+            stroke-linecap="round"></path>
+          <path
+            d="M 70 60 Q 75 65 80 60"
+            fill="none"
+            stroke="var(--clr-bg)"
+            stroke-width="3"
+            stroke-linecap="round"></path>
+
+          <circle cx="60" cy="74" r="3" fill="var(--clr-bg)"></circle>
+        </svg>
+      </div>
+
+      <h1
+        class="text-4xl md:text-5xl font-bold mb-5 tracking-tight"
+        style="color: var(--clr-ink-dark); font-family: var(--font-display);"
+      >
+        Estamos descansando
+      </h1>
+
+      <p
+        class="text-base md:text-lg mb-10 max-w-lg leading-relaxed"
+        style="color: var(--clr-ink); opacity: 0.7; font-family: var(--font-body);"
+      >
+        El menú no está disponible en este momento porque el local ha pausado su visualización.
+        Vuelve a visitarnos más tarde.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center gap-4">
+        <button
+          onclick="window.location.reload()"
+          class="group inline-flex items-center gap-3 px-8 py-4 text-white text-xs tracking-[0.2em] uppercase transition-colors duration-300 rounded-(--radius-btn)"
+          style="background-color: var(--clr-ink);"
+          onmouseover="this.style.backgroundColor='var(--clr-ink-dark)'"
+          onmouseout="this.style.backgroundColor='var(--clr-ink)'"
+        >
+          <svg
+            class="w-4 h-4 transition-transform duration-500 group-hover:rotate-180"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span>Actualizar página</span>
+        </button>
+      </div>
+    </div>
+  </main>
+</Layout>

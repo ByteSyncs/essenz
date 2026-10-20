@@ -1,31 +1,68 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Settings {
-  mp_enabled: boolean
-  mp_access_token: string
-  mp_public_key: string
   menu_active: boolean
+  show_menu_images: boolean
+  address: string
+  city: string
+  contact_phone: string
+  contact_email: string
+  opening_hours: string
+  instagram_url: string
+  facebook_url: string
 }
+
+const EMPTY_SETTINGS: Settings = {
+  menu_active: true,
+  show_menu_images: true,
+  address: '',
+  city: '',
+  contact_phone: '',
+  contact_email: '',
+  opening_hours: '',
+  instagram_url: '',
+  facebook_url: '',
+}
+
+const TEXT_FIELDS: {
+  key: Exclude<keyof Settings, 'menu_active' | 'show_menu_images'>
+  label: string
+  type?: string
+  placeholder?: string
+}[] = [
+  { key: 'address', label: 'Dirección' },
+  { key: 'city', label: 'Ciudad o zona' },
+  {
+    key: 'contact_phone',
+    label: 'Teléfono / WhatsApp',
+    type: 'tel',
+    placeholder: '+54 9 11 2345 6789',
+  },
+  { key: 'contact_email', label: 'Email de contacto', type: 'email' },
+  { key: 'opening_hours', label: 'Días y horarios' },
+  { key: 'instagram_url', label: 'Enlace de Instagram', type: 'url' },
+  { key: 'facebook_url', label: 'Enlace de Facebook', type: 'url' },
+]
 
 function Toggle({
   checked,
   onChange,
-  disabled,
+  label,
 }: {
   checked: boolean
-  onChange: (v: boolean) => void
-  disabled?: boolean
+  onChange: (value: boolean) => void
+  label: string
 }) {
   return (
     <button
       type="button"
-      onClick={() => !disabled && onChange(!checked)}
-      disabled={disabled}
+      onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center transition-colors duration-200 ${
         checked ? 'bg-(--clr-ink)' : 'bg-gray-200'
-      } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+      }`}
       role="switch"
+      aria-label={label}
       aria-checked={checked}
     >
       <span
@@ -37,97 +74,52 @@ function Toggle({
   )
 }
 
-function SecretField({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-}) {
-  const [show, setShow] = useState(false)
-  return (
-    <div>
-      <label className="block text-[10px] uppercase font-black tracking-widest text-gray-400 mb-1.5">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          type={show ? 'text' : 'password'}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full bg-white border border-gray-200 px-3 py-2.5 pr-10 text-sm text-(--clr-ink) placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-(--clr-accent)/30 focus:border-(--clr-accent) transition-all font-mono"
-        />
-        <button
-          type="button"
-          onClick={() => setShow(!show)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
-        >
-          {show ? (
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          )}
-        </button>
-      </div>
-    </div>
-  )
+function readSettings(value: Partial<Settings>): Settings {
+  return {
+    menu_active: Boolean(value.menu_active),
+    show_menu_images: value.show_menu_images !== false,
+    address: value.address ?? '',
+    city: value.city ?? '',
+    contact_phone: value.contact_phone ?? '',
+    contact_email: value.contact_email ?? '',
+    opening_hours: value.opening_hours ?? '',
+    instagram_url: value.instagram_url ?? '',
+    facebook_url: value.facebook_url ?? '',
+  }
 }
 
 export default function SettingsView({ slug }: { slug: string }) {
-  const [settings, setSettings] = useState<Settings>({
-    mp_enabled: false,
-    mp_access_token: '',
-    mp_public_key: '',
-    menu_active: true,
-  })
+  const [settings, setSettings] = useState<Settings>(EMPTY_SETTINGS)
+  const [initialSettings, setInitialSettings] = useState<Settings>(EMPTY_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
+  const hasChanges = useMemo(
+    () => JSON.stringify(settings) !== JSON.stringify(initialSettings),
+    [settings, initialSettings],
+  )
+
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/settings?slug=${slug}`, { credentials: 'include' })
-        if (!res.ok) throw new Error('Error al cargar la configuración')
-        const data = await res.json()
-        setSettings(data)
-      } catch (e) {
-        setError((e as Error).message)
+        const response = await fetch(`/api/organizations/${slug}/settings`, {
+          credentials: 'include',
+        })
+        const result = await response.json()
+        if (!response.ok || !result.success || !result.settings) {
+          throw new Error(
+            response.status === 403
+              ? 'Solo el dueño puede administrar estos ajustes.'
+              : 'No pudimos cargar la configuración.',
+          )
+        }
+        const loaded = readSettings(result.settings)
+        setSettings(loaded)
+        setInitialSettings(loaded)
+      } catch (loadError) {
+        setError((loadError as Error).message)
       } finally {
         setIsLoading(false)
       }
@@ -136,32 +128,43 @@ export default function SettingsView({ slug }: { slug: string }) {
   }, [slug])
 
   const handleSave = useCallback(async () => {
+    if (!hasChanges) return
     setIsSaving(true)
     setError(null)
     try {
-      const res = await fetch('/api/settings/update', {
+      const response = await fetch(`/api/organizations/${slug}/settings`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, ...settings }),
+        body: JSON.stringify(settings),
       })
-      if (!res.ok) throw new Error('Error al guardar')
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        throw new Error(
+          response.status === 403
+            ? 'Solo el dueño puede administrar estos ajustes.'
+            : 'No pudimos guardar los cambios.',
+        )
+      }
+      const saved = readSettings(result.settings)
+      setSettings(saved)
+      setInitialSettings(saved)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
-    } catch (e) {
-      setError((e as Error).message)
+    } catch (saveError) {
+      setError((saveError as Error).message)
     } finally {
       setIsSaving(false)
     }
-  }, [slug, settings])
+  }, [slug, settings, hasChanges])
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) =>
-    setSettings((prev) => ({ ...prev, [key]: value }))
+    setSettings((previous) => ({ ...previous, [key]: value }))
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-xs font-black uppercase tracking-widest text-gray-300 animate-pulse">
+      <div className="flex h-64 items-center justify-center">
+        <p className="animate-pulse text-xs font-black uppercase tracking-widest text-gray-300">
           Cargando...
         </p>
       </div>
@@ -169,12 +172,15 @@ export default function SettingsView({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="px-6 md:px-10 py-8 max-w-2xl">
+    <div className="max-w-3xl px-6 py-8 md:px-10">
       <div className="mb-8">
-        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-(--clr-accent) mb-1">
-          Configuración
+        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.25em] text-(--clr-accent)">
+          Configuración del dueño
         </p>
-        <h2 className="text-2xl font-bold text-(--clr-ink) tracking-tight">Ajustes</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-(--clr-ink)">Tu sitio público</h2>
+        <p className="mt-2 text-sm text-gray-500">
+          Estos datos aparecen en la página de tu negocio y son públicos para tus clientes.
+        </p>
       </div>
 
       <AnimatePresence>
@@ -183,19 +189,12 @@ export default function SettingsView({ slug }: { slug: string }) {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mb-6 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 flex items-center justify-between"
+            className="mb-6 flex items-center justify-between border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
           >
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-700 ml-4">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+            <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-700">
+              Cerrar
             </button>
           </motion.div>
         )}
@@ -204,112 +203,81 @@ export default function SettingsView({ slug }: { slug: string }) {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mb-6 bg-green-50 border border-green-100 text-green-700 text-sm px-4 py-3"
+            className="mb-6 border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-700"
+            role="status"
           >
-            ✓ Configuración guardada
+            Configuración guardada.
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className="space-y-8">
-        {/* General */}
         <section>
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 pb-2 border-b border-gray-100">
-            General
+          <h3 className="mb-3 border-b border-gray-100 pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+            Visibilidad
           </h3>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="text-sm font-bold text-(--clr-ink)">Carta activa</p>
-              <p className="text-xs text-gray-400">
-                Si está desactivada, los clientes no verán el menú
-              </p>
+          <div className="divide-y divide-gray-100">
+            <div className="flex items-center justify-between gap-5 py-4">
+              <div>
+                <p className="text-sm font-bold text-(--clr-ink)">Carta activa</p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Si la desactivás, tus clientes no podrán abrir la carta.
+                </p>
+              </div>
+              <Toggle
+                checked={settings.menu_active}
+                onChange={(value) => update('menu_active', value)}
+                label="Activar o desactivar la carta"
+              />
             </div>
-            <Toggle checked={settings.menu_active} onChange={(v) => update('menu_active', v)} />
+            <div className="flex items-center justify-between gap-5 py-4">
+              <div>
+                <p className="text-sm font-bold text-(--clr-ink)">Fotos en la carta</p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Mostrá u ocultá las fotos que subiste para tus productos.
+                </p>
+              </div>
+              <Toggle
+                checked={settings.show_menu_images}
+                onChange={(value) => update('show_menu_images', value)}
+                label="Mostrar fotos de productos en la carta"
+              />
+            </div>
           </div>
         </section>
 
-        {/* Mercado Pago */}
         <section>
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-              Mercado Pago
-            </h3>
-            <a
-              href="https://www.mercadopago.com.ar/developers/es/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] text-(--clr-accent) font-bold hover:underline flex items-center gap-1"
-            >
-              Ir a Developers
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+          <h3 className="mb-4 border-b border-gray-100 pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+            Información del negocio
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {TEXT_FIELDS.map(({ key, label, type = 'text', placeholder }) => (
+              <label
+                key={key}
+                className={`block text-[10px] font-bold uppercase tracking-widest text-gray-500 ${
+                  key === 'opening_hours' ? 'sm:col-span-2' : ''
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+                {label}
+                <input
+                  type={type}
+                  value={settings[key]}
+                  onChange={(event) => update(key, event.target.value)}
+                  placeholder={placeholder}
+                  maxLength={key === 'contact_email' ? 254 : key.includes('_url') ? 300 : 160}
+                  className="mt-2 w-full border border-gray-200 bg-white px-3 py-3 text-sm font-normal normal-case tracking-normal text-(--clr-ink) outline-none transition focus:border-(--clr-accent)"
+                  autoComplete={type === 'email' ? 'email' : type === 'tel' ? 'tel' : 'off'}
                 />
-              </svg>
-            </a>
+              </label>
+            ))}
           </div>
-
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="text-sm font-bold text-(--clr-ink)">Habilitar pagos en línea</p>
-              <p className="text-xs text-gray-400">Los clientes podrán pagar desde la carta</p>
-            </div>
-            <Toggle checked={settings.mp_enabled} onChange={(v) => update('mp_enabled', v)} />
-          </div>
-
-          <AnimatePresence>
-            {settings.mp_enabled && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="space-y-4 pt-4 pb-2">
-                  <div className="bg-amber-50 border border-amber-100 px-4 py-3 text-xs text-amber-700">
-                    <strong>Importante:</strong> Estas claves se obtienen desde tu cuenta de{' '}
-                    <a
-                      href="https://www.mercadopago.com.ar/developers/panel/app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline font-bold"
-                    >
-                      Mercado Pago Developers
-                    </a>
-                    . Nunca compartas tu Access Token.
-                  </div>
-                  <SecretField
-                    label="Access Token"
-                    value={settings.mp_access_token}
-                    onChange={(v) => update('mp_access_token', v)}
-                    placeholder="APP_USR-..."
-                  />
-                  <SecretField
-                    label="Public Key"
-                    value={settings.mp_public_key}
-                    onChange={(v) => update('mp_public_key', v)}
-                    placeholder="APP_USR-..."
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </section>
 
-        {/* Save */}
         <motion.button
-          whileTap={{ scale: 0.97 }}
+          whileTap={hasChanges && !isSaving ? { scale: 0.98 } : undefined}
           onClick={handleSave}
-          disabled={isSaving}
-          className="w-full py-3.5 bg-(--clr-ink) text-white text-sm font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/5"
+          disabled={!hasChanges || isSaving}
+          className="w-full bg-(--clr-ink) py-3.5 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-black/5 transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-30"
         >
           {isSaving ? 'Guardando...' : 'Guardar configuración'}
         </motion.button>

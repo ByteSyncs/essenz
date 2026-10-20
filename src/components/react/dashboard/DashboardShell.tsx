@@ -6,11 +6,17 @@ import MenuView from './views/MenuView'
 import OrdersView from './views/OrdersView'
 import QRView from './views/QrView'
 import SettingsView from './views/SettingsView'
+import InventoryView from './views/InventoryView'
+import StatisticsView from './views/StatisticsView'
+import ExpensesView from './views/ExpensesView'
+import TeamView from './views/TeamView'
+import { ALL_VIEWS, OWNER_ONLY_VIEWS, type DashboardView } from './dashboardViews'
 
-export type DashboardView = 'home' | 'menu' | 'orders' | 'qr' | 'settings'
+export type { DashboardView } from './dashboardViews'
 
 interface DashboardShellProps {
   slug: string
+  role: string
 }
 
 const views: Record<DashboardView, React.ComponentType<{ slug: string }>> = {
@@ -19,26 +25,39 @@ const views: Record<DashboardView, React.ComponentType<{ slug: string }>> = {
   orders: OrdersView,
   qr: QRView,
   settings: SettingsView,
+  inventory: InventoryView,
+  statistics: StatisticsView,
+  expenses: ExpensesView,
+  team: TeamView,
 }
 
-export default function DashboardShell({ slug }: DashboardShellProps) {
+export default function DashboardShell({ slug, role }: DashboardShellProps) {
+  const isOwner = role === 'admin' || role === 'owner'
   const [activeView, setActiveView] = useState<DashboardView>('home')
+  const [visited, setVisited] = useState<DashboardView[]>([])
+  const [ready, setReady] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     const savedView = sessionStorage.getItem('essenz_admin_view') as DashboardView
-    if (['home', 'menu', 'orders', 'qr', 'settings'].includes(savedView)) {
-      setActiveView(savedView)
-    }
-  }, [])
+    const isValid =
+      ALL_VIEWS.includes(savedView) && (isOwner || !OWNER_ONLY_VIEWS.includes(savedView))
+    const initial: DashboardView = isValid ? savedView : 'home'
+    setActiveView(initial)
+    setVisited([initial])
+    setReady(true)
+  }, [isOwner])
 
-  const handleNav = useCallback((view: DashboardView) => {
-    setActiveView(view)
-    sessionStorage.setItem('essenz_admin_view', view)
-    setSidebarOpen(false)
-  }, [])
-
-  const ActiveView = views[activeView]
+  const handleNav = useCallback(
+    (view: DashboardView) => {
+      if (!isOwner && OWNER_ONLY_VIEWS.includes(view)) return
+      setActiveView(view)
+      setVisited((prev) => (prev.includes(view) ? prev : [...prev, view]))
+      sessionStorage.setItem('essenz_admin_view', view)
+      setSidebarOpen(false)
+    },
+    [isOwner],
+  )
 
   return (
     <div className="min-h-screen bg-(--clr-bg) flex items-start justify-center py-6 px-4 md:py-10 md:px-6">
@@ -71,6 +90,7 @@ export default function DashboardShell({ slug }: DashboardShellProps) {
                 active={activeView}
                 onNav={handleNav}
                 slug={slug}
+                isOwner={isOwner}
                 onClose={() => setSidebarOpen(false)}
               />
             </motion.div>
@@ -81,7 +101,7 @@ export default function DashboardShell({ slug }: DashboardShellProps) {
           className="hidden md:flex flex-col border-r border-gray-100 shrink-0"
           style={{ width: 220 }}
         >
-          <Sidebar active={activeView} onNav={handleNav} slug={slug} />
+          <Sidebar active={activeView} onNav={handleNav} slug={slug} isOwner={isOwner} />
         </div>
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -111,18 +131,17 @@ export default function DashboardShell({ slug }: DashboardShellProps) {
             <div className="w-9" />
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeView}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
-              className="flex-1 overflow-y-auto"
-            >
-              <ActiveView slug={slug} />
-            </motion.div>
-          </AnimatePresence>
+          <div className="flex-1 overflow-y-auto">
+            {ready &&
+              visited.map((view) => {
+                const View = views[view]
+                return (
+                  <div key={view} className={view === activeView ? 'block h-full' : 'hidden'}>
+                    <View slug={slug} />
+                  </div>
+                )
+              })}
+          </div>
         </main>
       </div>
     </div>

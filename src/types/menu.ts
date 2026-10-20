@@ -9,7 +9,7 @@ export interface MenuItem {
   image_url?: string | null
 
   intensity?: number
-  details: {
+  details?: {
     grams: string
     bitterness: string
     notes: string[]

@@ -1,0 +1,18 @@
+---
+import '../styles/global.css'
+import Layout from '../layouts/Layout.astro'
+import Nav from '../components/react/Nav'
+import Footer from '../components/react/Footer'
+import Pricing from '../components/landing/Pricing.astro'
+---
+
+<Layout
+  title="Essenz Plans | Menú digital y gestión para locales gastronómicos"
+  description="Compará los planes Basic y Business de Essenz: sitio y menú digital para tu local, con herramientas de pedidos, inventario, gastos y estadísticas."
+>
+  <Nav client:load />
+  <main class="min-h-screen pt-24">
+    <Pricing />
+  </main>
+  <Footer />
+</Layout>

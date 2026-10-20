@@ -1,9 +1,10 @@
-import type { DashboardView } from './DashboardShell'
+import { OWNER_ONLY_VIEWS, type DashboardView } from './dashboardViews'
 
 interface SidebarProps {
   active: DashboardView
   onNav: (view: DashboardView) => void
   slug: string
+  isOwner: boolean
   onClose?: () => void
 }
 
@@ -65,6 +66,64 @@ const navItems: { id: DashboardView; label: string; icon: React.ReactNode }[] = 
       </svg>
     ),
   },
+
+  {
+    id: 'inventory',
+    label: 'Inventario',
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: 'expenses',
+    label: 'Gastos',
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: 'statistics',
+    label: 'Estadísticas',
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+        />
+      </svg>
+    ),
+  },
   {
     id: 'qr',
     label: 'QR',
@@ -89,6 +148,27 @@ const navItems: { id: DashboardView; label: string; icon: React.ReactNode }[] = 
       </svg>
     ),
   },
+
+  {
+    id: 'team',
+    label: 'Equipo',
+    icon: (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+        />
+      </svg>
+    ),
+  },
+
   {
     id: 'settings',
     label: 'Configuración',
@@ -111,7 +191,9 @@ const navItems: { id: DashboardView; label: string; icon: React.ReactNode }[] = 
   },
 ]
 
-export default function Sidebar({ active, onNav, slug, onClose }: SidebarProps) {
+export default function Sidebar({ active, onNav, slug, isOwner, onClose }: SidebarProps) {
+  const visibleItems = navItems.filter((item) => isOwner || !OWNER_ONLY_VIEWS.includes(item.id))
+
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="px-5 pt-6 pb-5 border-b border-gray-100">
@@ -125,7 +207,7 @@ export default function Sidebar({ active, onNav, slug, onClose }: SidebarProps) 
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all cursor-pointer"
             >
               <svg
                 className="w-4 h-4"
@@ -142,13 +224,13 @@ export default function Sidebar({ active, onNav, slug, onClose }: SidebarProps) 
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = active === item.id
           return (
             <button
               key={item.id}
               onClick={() => onNav(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all rounded-none text-left ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all rounded-none text-left cursor-pointer ${
                 isActive
                   ? 'bg-(--clr-ink) text-white'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-(--clr-ink)'

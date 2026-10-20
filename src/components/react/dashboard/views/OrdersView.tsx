@@ -4,27 +4,7 @@ import supabase from '../../../../libs/supabase'
 import { useReactToPrint } from 'react-to-print'
 import { Ticket } from '../Ticket'
 import { KitchenTicket } from '../KitchenTicket'
-
-export type OrderStatus = 'pending' | 'preparing' | 'delivered'
-
-export interface OrderItem {
-  id: string
-  name: string
-  qty: number
-  price: number
-}
-
-export interface Order {
-  id: string
-  org_slug: string
-  table_number: string | null
-  customer_name: string
-  status: OrderStatus
-  created_at: string
-  total_price: number
-  payments: { method: string; amount: number }[]
-  items: OrderItem[]
-}
+import type { Order, OrderItem, OrderStatus } from '../../../../types/orders'
 
 const DISCOUNT_TYPES = {
   Clientes: 'clients',
@@ -46,6 +26,27 @@ const METHOD_LABELS: Record<string, string> = {
   virtual: 'Virtual',
 }
 
+const ORDER_ERRORS: Record<string, string> = {
+  payments_mismatch: 'Los montos de pago no suman el total más la propina.',
+  invalid_payments: 'Revisá los métodos de pago. No podés repetir el mismo método.',
+  cash_insufficient: 'El efectivo recibido no alcanza para cubrir el pago.',
+  invalid_items: 'Hay productos que ya no están disponibles. Quitalos e intentá de nuevo.',
+  invalid_discount: 'El descuento no es válido.',
+  owner_access_required: 'Tu usuario no tiene permiso para esta acción.',
+  subscription_required: 'La suscripción del local no está activa.',
+}
+
+function getUnitPrice(product: {
+  price: number | string
+  in_offer?: boolean
+  offer_percent?: number | null
+}) {
+  const base = Number(product.price)
+  return product.in_offer && product.offer_percent
+    ? Math.round(base * (1 - Number(product.offer_percent) / 100))
+    : base
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
   if (diff < 60) return `${diff}s`
@@ -61,13 +62,15 @@ export default function OrdersView({ slug }: { slug: string }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [isOpenNewOrder, setIsOpenNewOrder] = useState(false)
   const [customerName, setCustomerName] = useState('')
   const [tableNumber, setTableNumber] = useState('')
   const [cart, setCart] = useState<OrderItem[]>([])
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
 
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [paymentMethod2, setPaymentMethod2] = useState<string | null>(null)
@@ -76,6 +79,7 @@ export default function OrdersView({ slug }: { slug: string }) {
   const [splitAmount2, setSplitAmount2] = useState('')
 
   const [cashGiven, setCashGiven] = useState('')
+  const [tipAmount, setTipAmount] = useState('')
 
   const [showDiscount, setShowDiscount] = useState(false)
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage')
@@ -98,6 +102,7 @@ export default function OrdersView({ slug }: { slug: string }) {
     setSplitAmount1('')
     setSplitAmount2('')
     setCashGiven('')
+    setTipAmount('')
     setIsOpenNewOrder(false)
     setSelectedOrder(null)
   }
@@ -125,6 +130,7 @@ export default function OrdersView({ slug }: { slug: string }) {
   }
 
   const total = Math.max(0, subtotal - discountAmount)
+  const finalTotalWithTip = total + (parseFloat(tipAmount) || 0)
 
   const isSplit = paymentMethod2 !== null
   const isCash1 = paymentMethod === 'cash'
@@ -145,12 +151,16 @@ export default function OrdersView({ slug }: { slug: string }) {
       : isCash2
         ? parseFloat(splitAmount2) || 0
         : 0
-    : total
+    : finalTotalWithTip
 
   const cashGivenNum = parseFloat(cashGiven) || 0
   const changeAmount = cashGiven ? Math.max(0, cashGivenNum - cashTargetAmount) : 0
   const missingAmount = cashGiven ? Math.max(0, cashTargetAmount - cashGivenNum) : 0
   const isPayingEnough = !cashGiven || cashGivenNum >= cashTargetAmount
+
+  const splitDiff =
+    (parseFloat(splitAmount1) || 0) + (parseFloat(splitAmount2) || 0) - finalTotalWithTip
+  const splitInvalid = isSplit && (Math.abs(splitDiff) > 0.009 || paymentMethod === paymentMethod2)
 
   useEffect(() => {
     async function initDashboard() {
@@ -195,7 +205,10 @@ export default function OrdersView({ slug }: { slug: string }) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setOrders((prev) => [...prev, payload.new as Order])
+            const incoming = payload.new as Order
+            setOrders((prev) =>
+              prev.some((o) => o.id === incoming.id) ? prev : [...prev, incoming],
+            )
           }
           if (payload.eventType === 'UPDATE') {
             setOrders((prev) =>
@@ -217,7 +230,7 @@ export default function OrdersView({ slug }: { slug: string }) {
   const handleStatusChange = useCallback(
     async (id: string, status: OrderStatus) => {
       setOrders((prev) => {
-        if (status === 'delivered') return prev.filter((o) => o.id !== id)
+        if (status === 'delivered' || status === 'cancelled') return prev.filter((o) => o.id !== id)
         return prev.map((o) => (o.id === id ? { ...o, status } : o))
       })
 
@@ -227,7 +240,7 @@ export default function OrdersView({ slug }: { slug: string }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status }),
         })
-        if (!res.ok) throw new Error('No se pudo actualizar el estado en el servidor')
+        if (!res.ok) throw new Error('Failed to update the status on the server')
       } catch (e) {
         console.error(e)
       }
@@ -235,13 +248,20 @@ export default function OrdersView({ slug }: { slug: string }) {
     [slug],
   )
 
-  const addToCart = (p: { id: string; name: string; price: number }) => {
+  const addToCart = (p: {
+    id: string
+    name: string
+    price: number | string
+    in_offer?: boolean
+    offer_percent?: number | null
+  }) => {
+    const price = getUnitPrice(p)
     setCart((prev) => {
       const exists = prev.find((item) => item.id === p.id)
       if (exists) {
         return prev.map((item) => (item.id === p.id ? { ...item, qty: item.qty + 1 } : item))
       }
-      return [...prev, { id: p.id, name: p.name, price: p.price, qty: 1 }]
+      return [...prev, { id: p.id, name: p.name, price, qty: 1 }]
     })
   }
 
@@ -258,27 +278,28 @@ export default function OrdersView({ slug }: { slug: string }) {
 
   const submitOrder = async (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault()
-    if (!customerName || cart.length === 0) return
+    if (!customerName || cart.length === 0 || isSubmitting) return
 
-    setIsLoading(true)
+    setIsSubmitting(true)
     setError(null)
 
     try {
       const payload = {
         customer_name: customerName,
         table_number: tableNumber || null,
-        status: 'pending',
-        items: cart,
-        total_price: total,
+        items: cart.map(({ id, qty }) => ({ id, qty })),
+        discount:
+          discountAmount > 0
+            ? { type: discountType, value: numericDiscount, reason: discountReason }
+            : null,
+        tip_amount: parseFloat(tipAmount) || 0,
         payments: isSplit
           ? [
               { method: paymentMethod, amount: parseFloat(splitAmount1) || 0 },
               { method: paymentMethod2, amount: parseFloat(splitAmount2) || 0 },
             ]
-          : [{ method: paymentMethod, amount: total }],
-        discount_amount: discountAmount,
-        discount_reason: discountAmount > 0 ? discountReason : null,
-        change_returned: hasCash ? changeAmount : null,
+          : [{ method: paymentMethod }],
+        cash_given: hasCash && cashGiven ? parseFloat(cashGiven) : null,
       }
 
       const res = await fetch(`/api/organizations/${slug}/orders`, {
@@ -289,17 +310,20 @@ export default function OrdersView({ slug }: { slug: string }) {
 
       const result = await res.json()
       if (!res.ok) {
-        throw new Error(result.error || `Error ${res.status}: No se pudo procesar la comanda`)
+        throw new Error(ORDER_ERRORS[result.error] ?? 'No se pudo procesar la comanda.')
       }
 
       setTimeout(() => handlePrintKitchen(), 150)
       const createdOrder: Order = result.data
+      setOrders((prev) =>
+        prev.some((o) => o.id === createdOrder.id) ? prev : [...prev, createdOrder],
+      )
       setSelectedOrder(createdOrder)
     } catch (e: any) {
       console.error('Error detallado:', e)
       setError(e.message || 'Ocurrió un error inesperado al guardar el pedido.')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -315,7 +339,7 @@ export default function OrdersView({ slug }: { slug: string }) {
       .slice(0, 50)
   }, [products, searchQuery])
 
-  if (isLoading)
+  if (isLoading && orders.length === 0 && products.length === 0)
     return (
       <div className="h-64 flex items-center justify-center text-xs font-black uppercase tracking-widest text-gray-300 animate-pulse">
         Cargando...
@@ -410,13 +434,41 @@ export default function OrdersView({ slug }: { slug: string }) {
                     ))}
                   </div>
 
-                  <div className="p-3 shrink-0 bg-gray-50/30 border-t md:border-t-0 md:border-l border-gray-100 flex items-center justify-end">
+                  <div className="p-3 shrink-0 bg-gray-50/30 border-t md:border-t-0 md:border-l border-gray-100 flex flex-col items-end gap-2">
                     <button
                       onClick={() => handleStatusChange(order.id, 'delivered')}
                       className="w-full md:w-auto px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-gray-900 hover:bg-gray-800 active:bg-black transition-colors rounded-sm"
                     >
                       ✓ Despachar
                     </button>
+
+                    {cancelConfirm === order.id ? (
+                      <div className="flex items-center gap-1.5 w-full md:w-auto">
+                        <span className="text-[10px] text-gray-400 font-bold">¿Cancelar?</span>
+                        <button
+                          onClick={() => {
+                            handleStatusChange(order.id, 'cancelled')
+                            setCancelConfirm(null)
+                          }}
+                          className="px-3 py-1.5 bg-red-500 text-white text-[10px] font-black hover:bg-red-600 transition-colors rounded-sm"
+                        >
+                          Sí
+                        </button>
+                        <button
+                          onClick={() => setCancelConfirm(null)}
+                          className="px-3 py-1.5 bg-gray-100 text-gray-600 text-[10px] font-black hover:bg-gray-200 transition-colors rounded-sm"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setCancelConfirm(order.id)}
+                        className="w-full md:w-auto px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition-colors rounded-sm"
+                      >
+                        ✕ Cancelar
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               )
@@ -507,7 +559,7 @@ export default function OrdersView({ slug }: { slug: string }) {
               </label>
               {!isSplit && (
                 <button
-                  onClick={() => setPaymentMethod2('debit')}
+                  onClick={() => setPaymentMethod2(paymentMethod === 'debit' ? 'cash' : 'debit')}
                   className="text-[10px] font-black text-gray-400 hover:text-black transition-colors"
                 >
                   + AGREGAR
@@ -594,7 +646,7 @@ export default function OrdersView({ slug }: { slug: string }) {
                     </p>
                   </div>
                   <span className="text-xs font-black text-gray-400 shrink-0 bg-gray-50 px-2 py-1 border rounded-xs">
-                    ${p.price.toLocaleString('es-AR')}
+                    ${getUnitPrice(p).toLocaleString('es-AR')}
                   </span>
                 </button>
               ))}
@@ -631,6 +683,24 @@ export default function OrdersView({ slug }: { slug: string }) {
                 </motion.div>
               ))}
             </AnimatePresence>
+          </div>
+
+          <div className="bg-gray-50 p-3 border border-gray-200 rounded-sm mb-4">
+            <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block mb-1.5">
+              Propina / Tip Amount
+            </label>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">
+                $
+              </span>
+              <input
+                type="number"
+                placeholder="Monto de propina..."
+                value={tipAmount}
+                onChange={(e) => setTipAmount(e.target.value)}
+                className="w-full pl-7 pr-2 py-2 text-xs font-bold border border-gray-200 bg-white focus:outline-none focus:border-black rounded-xs"
+              />
+            </div>
           </div>
 
           <div className="border-t border-gray-100 pt-3 mb-2">
@@ -717,16 +787,24 @@ export default function OrdersView({ slug }: { slug: string }) {
               </>
             )}
 
+            {parseFloat(tipAmount) > 0 && (
+              <div className="flex justify-between font-bold text-xs mb-2 text-emerald-600">
+                <span>Propina:</span>
+                <span>+ $ {parseFloat(tipAmount).toLocaleString('es-AR')}</span>
+              </div>
+            )}
+
             <div className="flex justify-between font-black text-sm mb-4 tracking-tight">
               <span>TOTAL:</span>
-              <span>$ {Math.round(total).toLocaleString('es-AR')}</span>
+              <span>$ {Math.round(finalTotalWithTip).toLocaleString('es-AR')}</span>
             </div>
 
             <>
               {(() => {
                 const suma = (parseFloat(splitAmount1) || 0) + (parseFloat(splitAmount2) || 0)
-                const diff = suma - total
-                const showDiffLabel = isSplit && total > 0 && (splitAmount1 || splitAmount2)
+                const diff = suma - finalTotalWithTip
+                const showDiffLabel =
+                  isSplit && finalTotalWithTip > 0 && (splitAmount1 || splitAmount2)
 
                 return (
                   <>
@@ -758,9 +836,9 @@ export default function OrdersView({ slug }: { slug: string }) {
                     <motion.div
                       initial={false}
                       animate={{
-                        height: isSplit && total > 0 ? 'auto' : 0,
-                        opacity: isSplit && total > 0 ? 1 : 0,
-                        marginBottom: isSplit && total > 0 ? 16 : 0,
+                        height: isSplit && finalTotalWithTip > 0 ? 'auto' : 0,
+                        opacity: isSplit && finalTotalWithTip > 0 ? 1 : 0,
+                        marginBottom: isSplit && finalTotalWithTip > 0 ? 16 : 0,
                       }}
                       transition={{
                         duration: 0.3,
@@ -811,10 +889,10 @@ export default function OrdersView({ slug }: { slug: string }) {
               <motion.div
                 initial={false}
                 animate={{
-                  height: hasCash && total > 0 ? 'auto' : 0,
-                  opacity: hasCash && total > 0 ? 1 : 0,
-                  marginTop: hasCash && total > 0 ? 16 : 0,
-                  marginBottom: hasCash && total > 0 ? 16 : 0,
+                  height: hasCash && finalTotalWithTip > 0 ? 'auto' : 0,
+                  opacity: hasCash && finalTotalWithTip > 0 ? 1 : 0,
+                  marginTop: hasCash && finalTotalWithTip > 0 ? 16 : 0,
+                  marginBottom: hasCash && finalTotalWithTip > 0 ? 16 : 0,
                 }}
                 transition={{
                   duration: 0.3,
@@ -872,10 +950,10 @@ export default function OrdersView({ slug }: { slug: string }) {
 
             <button
               onClick={submitOrder}
-              disabled={!customerName || cart.length === 0}
+              disabled={!customerName || cart.length === 0 || isSubmitting || splitInvalid}
               className="w-full py-4 bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black disabled:bg-gray-100 disabled:text-gray-300 transition-colors rounded-sm"
             >
-              Crear Comanda →
+              {isSubmitting ? 'Creando...' : 'Crear Comanda →'}
             </button>
           </div>
         </div>

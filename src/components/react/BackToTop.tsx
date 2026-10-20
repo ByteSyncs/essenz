@@ -28,6 +28,8 @@ export default function BackToTop() {
     <AnimatePresence>
       {isVisible && (
         <motion.button
+          type="button"
+          aria-label="Volver al inicio"
           initial={{ opacity: 0, scale: 0.8, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 20 }}

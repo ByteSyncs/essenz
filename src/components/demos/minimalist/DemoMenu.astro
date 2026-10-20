@@ -1,0 +1,314 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import DemoCta from '../DemoContact.astro'
+import { ESSENZ_URL } from '../../../constants/site'
+
+const supabase = Astro.locals.supabase
+const { data: tenant, error: organizationError } = await supabase
+  .from('organizations')
+  .select('id, name, tagline, logo_url')
+  .eq('slug', 'demo-minimalist')
+  .maybeSingle()
+
+if (organizationError) {
+  console.error('[demo-minimalist/menu] organization error:', organizationError)
+  throw new Error('Could not load the minimalist demo organization.', {
+    cause: organizationError,
+  })
+}
+
+if (!tenant) return Astro.redirect('/404')
+
+const { data: categories, error: categoriesError } = await supabase
+  .from('categories')
+  .select(
+    `
+    id,
+    title,
+    display_order,
+    products (
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      in_offer,
+      offer_percent,
+      is_active,
+      display_order
+    )
+  `,
+  )
+  .eq('organization_id', tenant.id)
+  .eq('products.is_active', true)
+  .order('display_order', { ascending: true })
+  .order('display_order', { referencedTable: 'products', ascending: true })
+
+if (categoriesError) {
+  console.error('[demo-minimalist/menu] products error:', categoriesError)
+  throw new Error('Could not load the minimalist demo menu.', { cause: categoriesError })
+}
+
+const groups = (categories ?? [])
+  .map((category) => ({
+    id: category.id,
+    title: category.title,
+    items: [...(category.products ?? [])]
+      .filter((product) => product.is_active)
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
+  }))
+  .filter((group) => group.items.length > 0)
+
+const totalItems = groups.reduce((sum, group) => sum + group.items.length, 0)
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(price)
+---
+
+<Layout
+  title={`Carta | ${tenant.name}`}
+  description={tenant.tagline ?? `Carta actualizada de ${tenant.name}.`}
+  theme="minimalist"
+>
+  <main class="min-h-svh bg-[#f7f7f5] text-[#171717]">
+    <div
+      class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-black px-5 py-2.5 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-white/70"
+    >
+      <span>Demo de Essenz / datos de ejemplo</span>
+      <a
+        href={ESSENZ_URL}
+        class="press text-white underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      >
+        Crear mi sitio ↗
+      </a>
+    </div>
+
+    <header class="glass-bar sticky top-0 z-30 border-b border-black/10">
+      <nav
+        aria-label={`Navegación de ${tenant.name}`}
+        class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-10"
+      >
+        <a
+          href="/demo-minimalist"
+          class="press flex min-h-11 items-center gap-3 text-lg font-black uppercase tracking-[-0.04em] sm:text-2xl"
+        >
+          <span class="size-3 bg-black"></span>{tenant.name}
+        </a>
+        <a
+          href={ESSENZ_URL}
+          class="press inline-flex min-h-11 items-center bg-black px-5 text-xs font-bold uppercase tracking-[0.12em] text-white hover:bg-neutral-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+        >
+          Crear el mío <span class="ml-2" aria-hidden="true">↗</span>
+        </a>
+      </nav>
+      {
+        groups.length > 1 && (
+          <nav aria-label="Categorías de la carta" class="mx-auto max-w-7xl">
+            <ul class="flex snap-x gap-2 overflow-x-auto px-5 pb-3 sm:px-10 [scrollbar-width:none]">
+              {groups.map((group) => (
+                <li class="shrink-0 snap-start">
+                  <a
+                    href={`#category-${group.id}`}
+                    class="press inline-flex min-h-10 items-center border-2 border-black px-4 text-[11px] font-bold uppercase tracking-[0.12em] hover:bg-black hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                  >
+                    {group.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
+    </header>
+
+    <section class="px-5 py-12 sm:px-10 sm:py-16">
+      <div
+        class="mx-auto grid max-w-7xl items-end gap-6 border-b-2 border-black pb-7 sm:grid-cols-[1fr_auto]"
+      >
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-black/45">
+            {tenant.name}
+          </p>
+          <h1
+            class="minimalist-title mt-4 text-6xl leading-[0.85] font-black uppercase tracking-[-0.08em] sm:text-8xl"
+          >
+            La<br class="sm:hidden" /> carta<span class="text-[#b7a78d]">.</span>
+          </h1>
+        </div>
+        <p class="max-w-xs text-sm leading-relaxed text-black/55">
+          {tenant.tagline ?? `Productos y precios de ${tenant.name}.`}
+          <span class="mt-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-black/40">
+            {totalItems === 1 ? '1 producto' : `${totalItems} productos`}
+          </span>
+        </p>
+      </div>
+    </section>
+
+    <div class="px-5 pb-20 sm:px-10">
+      {
+        groups.length ? (
+          <div class="mx-auto max-w-7xl space-y-16">
+            {groups.map((group, groupIndex) => (
+              <section id={`category-${group.id}`} class="scroll-mt-32">
+                <div class="mb-8 flex items-end justify-between gap-4 border-b border-black pb-3">
+                  <h2 class="text-3xl leading-none font-black uppercase tracking-[-0.05em] sm:text-5xl">
+                    <span class="mr-3 text-sm font-bold tabular-nums tracking-normal text-black/40">
+                      {String(groupIndex + 1).padStart(2, '0')}
+                    </span>
+                    {group.title}
+                  </h2>
+                  <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-black/45">
+                    {group.items.length === 1 ? '1 producto' : `${group.items.length} productos`}
+                  </p>
+                </div>
+                <ul class="grid gap-x-10 gap-y-10 md:grid-cols-2">
+                  {group.items.map((item, itemIndex) => {
+                    const price = Number(item.price)
+                    const hasOffer = Boolean(item.in_offer && item.offer_percent)
+                    const finalPrice = hasOffer
+                      ? price * (1 - Number(item.offer_percent) / 100)
+                      : price
+                    const isFirst = groupIndex === 0 && itemIndex === 0
+
+                    return (
+                      <li class="rise min-w-0" style={`--i:${itemIndex}`}>
+                        <article class="grid h-full gap-5 border-b border-black/15 pb-7 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]">
+                          {item.image_url ? (
+                            <img
+                              src={item.image_url}
+                              alt={item.name}
+                              width="1000"
+                              height="750"
+                              loading={isFirst ? 'eager' : 'lazy'}
+                              fetchpriority={isFirst ? 'high' : 'auto'}
+                              decoding="async"
+                              class="aspect-4/3 w-full object-cover grayscale-12"
+                            />
+                          ) : (
+                            <div class="aspect-4/3 w-full bg-black/5" aria-hidden="true" />
+                          )}
+                          <div class="flex flex-col justify-between">
+                            <div>
+                              <h3 class="text-2xl leading-tight font-black uppercase tracking-[-0.04em]">
+                                {item.name}
+                              </h3>
+                              {item.description && (
+                                <p class="mt-3 text-sm leading-relaxed text-black/60">
+                                  {item.description}
+                                </p>
+                              )}
+                              {hasOffer && (
+                                <p class="mt-3 inline-block bg-black px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+                                  -{item.offer_percent}%
+                                </p>
+                              )}
+                            </div>
+                            <p class="mt-6 border-t border-black/10 pt-4 text-lg font-bold tabular-nums">
+                              {formatPrice(finalPrice)}
+                              {hasOffer && (
+                                <span class="ml-3 text-sm font-normal text-black/40 line-through">
+                                  {formatPrice(price)}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </article>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <p class="mx-auto max-w-7xl border-y border-black/15 py-10 text-center text-sm text-black/55">
+            El negocio todavía no publicó productos en su carta.
+          </p>
+        )
+      }
+    </div>
+
+    <DemoCta theme="minimalist" name={tenant.name} />
+
+    <footer
+      class="flex flex-col gap-3 border-t border-black/10 px-5 py-7 text-[10px] uppercase tracking-[0.12em] text-black/50 sm:flex-row sm:justify-between sm:px-10"
+    >
+      <a href="/demo-minimalist" class="font-bold underline underline-offset-4"
+        >← Volver a {tenant.name}</a
+      >
+      <span>Carta digital · Essenz</span>
+    </footer>
+  </main>
+
+  <style>
+    :global(html) {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    a {
+      touch-action: manipulation;
+    }
+
+    .press {
+      transition:
+        transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+        background-color 160ms ease,
+        color 160ms ease;
+    }
+
+    .press:active {
+      transform: scale(0.97);
+    }
+
+    .glass-bar {
+      background: rgba(247, 247, 245, 0.84);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      backdrop-filter: blur(16px) saturate(160%);
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+      .glass-bar {
+        background: #f7f7f5;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :global(html) {
+        scroll-behavior: smooth;
+      }
+
+      .rise {
+        opacity: 1;
+        transform: translateY(0);
+        transition:
+          opacity 380ms cubic-bezier(0.23, 1, 0.32, 1),
+          transform 380ms cubic-bezier(0.23, 1, 0.32, 1);
+        transition-delay: calc(min(var(--i, 0), 8) * 40ms);
+      }
+
+      @starting-style {
+        .rise {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+
+      .minimalist-title {
+        clip-path: inset(0);
+        transition: clip-path 450ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      @starting-style {
+        .minimalist-title {
+          clip-path: inset(0 100% 0 0);
+        }
+      }
+    }
+  </style>
+</Layout>

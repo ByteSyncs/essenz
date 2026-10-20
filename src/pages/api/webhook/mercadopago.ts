@@ -12,61 +12,94 @@ export const POST: APIRoute = async ({ request, url }) => {
     )
 
     if (!isValid) {
-      return new Response(JSON.stringify({ message: 'Unauthorized' }), { status: 401 })
+      console.error('[MP WEBHOOK] Invalid signature')
+      return new Response('Unauthorized', { status: 401 })
     }
 
     const body = await request.json()
 
     if (body.type === 'subscription_preapproval') {
-      const preApprovalId = body.data.id
+      const preApprovalId = body.data?.id
+
+      if (!preApprovalId) {
+        console.error('[MP WEBHOOK] Missing preapproval ID')
+        return new Response('Missing preapproval ID', { status: 400 })
+      }
+
       const subscriptionData = await preApproval.get({ id: preApprovalId })
 
       if (subscriptionData.status === 'authorized') {
         const subId = subscriptionData.external_reference
 
-        await supabaseAdmin
+        if (!subId) {
+          console.error('[MP WEBHOOK] Preapproval has no subscription reference')
+          return new Response('Missing subscription reference', { status: 400 })
+        }
+
+        const { data: updated, error } = await supabaseAdmin
           .from('subscriptions')
           .update({
-            status: 'active',
             provider_customer_id: subscriptionData.payer_id?.toString(),
-            provider_subscription_id: preApprovalId,
+            provider_subscription_id: preApprovalId.toString(),
             updated_at: new Date().toISOString(),
           })
           .eq('id', subId)
+          .select('id')
+          .maybeSingle()
+
+        if (error) {
+          console.error('[MP WEBHOOK] Failed to update subscription:', error)
+          return new Response('Subscription update failed', { status: 500 })
+        }
+
+        if (!updated) {
+          console.error('[MP WEBHOOK] Subscription not found:', subId)
+          return new Response('Subscription not found', { status: 500 })
+        }
       }
     }
+
     if (body.type === 'payment') {
-      const paymentId = body.data.id
+      const paymentId = body.data?.id
+
+      if (!paymentId) {
+        console.error('[MP WEBHOOK] Missing payment ID')
+        return new Response('Missing payment ID', { status: 400 })
+      }
+
       const payment = await Payment.get({ id: paymentId })
 
       if (payment.status === 'approved') {
         const subId = payment.external_reference
 
-        const expirationDate = new Date()
-        expirationDate.setMonth(expirationDate.getMonth() + 1)
+        if (!subId) {
+          console.error('[MP WEBHOOK] Approved payment has no subscription reference')
+          return new Response('Missing subscription reference', { status: 400 })
+        }
 
-        const { error } = await supabaseAdmin
-          .from('subscriptions')
-          .update({
-            status: 'active',
-            provider_customer_id: payment.payer?.id?.toString(),
-            provider_order_id: paymentId.toString(),
-            current_period_end: expirationDate.toISOString(),
-            payment_provider: `mercadopago:${payment.payment_type_id}`,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', subId)
+        const { data: processed, error } = await supabaseAdmin.rpc('process_mp_payment', {
+          p_payment_id: paymentId.toString(),
+          p_subscription_id: subId,
+          p_payer_id: payment.payer?.id?.toString() ?? null,
+          p_payment_type_id: payment.payment_type_id ?? 'unknown',
+        })
 
         if (error) {
-          console.error('Error updating Supabase:', error.message)
-          return new Response('Database Error', { status: 500 })
+          console.error('[MP WEBHOOK] Payment processing failed:', error)
+          return new Response('Payment processing failed', { status: 500 })
+        }
+
+        if (processed) {
+          console.info('[MP WEBHOOK] Payment processed successfully:', paymentId)
+        } else {
+          console.info('[MP WEBHOOK] Duplicate payment ignored:', paymentId)
         }
       }
     }
 
     return new Response('OK', { status: 200 })
   } catch (err) {
-    console.error('Webhook Error:', err)
-    return new Response('OK', { status: 200 })
+    console.error('[MP WEBHOOK] Unexpected error:', err)
+    return new Response('Internal Server Error', { status: 500 })
   }
 }

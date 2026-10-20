@@ -1,13 +1,16 @@
 ---
 import Layout from '../../layouts/Layout.astro'
-import supabase from '../../libs/supabase'
+import { getSafeBrandStyles } from '../../libs/brandStyles'
 
 const { slug } = Astro.params
 const cleanSlug = slug?.toString().trim().toLowerCase()
+const supabase = Astro.locals.supabase
 
 const { data: tenant, error: orgError } = await supabase
   .from('organizations')
-  .select('id, name, slug, theme, tagline, logo_url, brand_colors')
+  .select(
+    'id, name, slug, theme, tagline, logo_url, brand_colors, organization_settings(show_menu_images)',
+  )
   .eq('slug', cleanSlug)
   .single()
 
@@ -58,18 +61,15 @@ const toSlug = (t: string) => {
 
 const { theme = 'modern', name, tagline, brand_colors } = tenant
 const isMin = theme === 'minimalist'
+const settings = Array.isArray(tenant.organization_settings)
+  ? tenant.organization_settings[0]
+  : tenant.organization_settings
+const showMenuImages = settings?.show_menu_images ?? true
 
 const pageTitle = `Carta | ${name}`
-const pageDescription = tagline ?? `Explorá la selección de ${name}.`
-
-const dynamicStyles = brand_colors
-  ? Object.entries(brand_colors as Record<string, string>)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join('; ')
-  : ''
-
-const defaultImage =
-  'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=800&q=80'
+const pageDescription =
+  tagline ?? `Consultá la carta actualizada de ${name}: productos, descripciones y precios.`
+const dynamicStyles = getSafeBrandStyles(brand_colors)
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-AR', {
@@ -80,7 +80,7 @@ const fmt = (n: number) =>
 ---
 
 <Layout title={pageTitle} description={pageDescription} theme={theme}>
-  <style set:html={`:root { ${dynamicStyles} }`}></style>
+  {dynamicStyles && <style set:html={`:root { ${dynamicStyles} }`} />}
 
   <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 md:hidden">
     <nav
@@ -296,10 +296,10 @@ const fmt = (n: number) =>
                           : item.price
                       const serialized = JSON.stringify({
                         ...item,
-                        image: item.image_url || defaultImage,
+                        image_url: showMenuImages ? item.image_url : null,
+                        image: showMenuImages ? item.image_url : null,
                         finalPrice,
                       })
-                      const isEven = idx % 2 === 0
                       const isFeatured = idx === 0 && catIndex === 0
 
                       return isFeatured ? (
@@ -309,25 +309,40 @@ const fmt = (n: number) =>
                           data-nombre={item.name.toLowerCase()}
                           data-details={serialized}
                         >
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-0">
-                            <div class="relative overflow-hidden bg-black/5 aspect-4/3 sm:aspect-auto sm:min-h-70">
-                              <img
-                                src={item.image_url || defaultImage}
-                                alt=""
-                                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                loading="eager"
-                              />
-                              {item.in_offer && item.offer_percent && (
-                                <span class="absolute top-4 left-4 bg-black text-white text-[9px] font-bold tracking-[0.2em] uppercase px-3 py-1">
-                                  -{item.offer_percent}%
-                                </span>
-                              )}
-                            </div>
+                          <div
+                            class:list={[
+                              'grid grid-cols-1 gap-0',
+                              showMenuImages && item.image_url && 'sm:grid-cols-2',
+                            ]}
+                          >
+                            {showMenuImages && item.image_url && (
+                              <div class="relative aspect-4/3 overflow-hidden bg-black/5 sm:aspect-auto sm:min-h-70">
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  width="1000"
+                                  height="750"
+                                  class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                                {item.in_offer && item.offer_percent && (
+                                  <span class="absolute left-4 top-4 bg-black px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white">
+                                    -{item.offer_percent}%
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             <div class="flex flex-col justify-between p-6 sm:p-8 bg-white">
                               <div>
                                 <span class="text-[9px] font-bold tracking-[0.3em] uppercase text-black/30 block mb-3">
-                                  Destacado
+                                  {cat.title}
                                 </span>
+                                {item.in_offer && item.offer_percent && (
+                                  <span class="mb-2 inline-block text-[10px] font-bold uppercase tracking-wider text-(--clr-accent)">
+                                    {item.offer_percent}% de descuento
+                                  </span>
+                                )}
                                 <h3 class="text-2xl sm:text-3xl font-bold text-black tracking-[-0.03em] leading-tight group-hover:text-(--clr-accent) transition-colors duration-200 mb-3">
                                   {item.name}
                                 </h3>
@@ -363,19 +378,24 @@ const fmt = (n: number) =>
                           data-details={serialized}
                         >
                           <div class="flex items-stretch gap-0">
-                            <div class="relative w-20 sm:w-28 shrink-0 overflow-hidden bg-black/5">
-                              <img
-                                src={item.image_url || defaultImage}
-                                alt=""
-                                class="w-full h-full object-cover grayscale-60 group-hover:grayscale-0 transition-all duration-500 aspect-square"
-                                loading="lazy"
-                              />
-                              {item.in_offer && item.offer_percent && (
-                                <span class="absolute top-2 left-2 bg-black text-white text-[8px] font-bold px-1.5 py-0.5">
-                                  -{item.offer_percent}%
-                                </span>
-                              )}
-                            </div>
+                            {showMenuImages && item.image_url && (
+                              <div class="relative w-20 shrink-0 overflow-hidden bg-black/5 sm:w-28">
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  width="112"
+                                  height="112"
+                                  class="aspect-square h-full w-full object-cover grayscale-60 transition-all duration-500 group-hover:grayscale-0"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                                {item.in_offer && item.offer_percent && (
+                                  <span class="absolute top-2 left-2 bg-black text-white text-[8px] font-bold px-1.5 py-0.5">
+                                    -{item.offer_percent}%
+                                  </span>
+                                )}
+                              </div>
+                            )}
 
                             <div class="flex-1 flex items-center justify-between px-5 py-4 sm:py-5 min-w-0">
                               <div class="min-w-0 pr-4">
@@ -435,37 +455,55 @@ const fmt = (n: number) =>
                           : item.price
                       const serialized = JSON.stringify({
                         ...item,
-                        image: item.image_url || defaultImage,
+                        image_url: showMenuImages ? item.image_url : null,
+                        image: showMenuImages ? item.image_url : null,
                         finalPrice,
                       })
                       return (
-                        <div
+                        <button
+                          type="button"
                           class="menu-item bg-(--clr-white) flex flex-col overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer group border border-(--clr-ink)/5 rounded-3xl"
                           data-nombre={item.name.toLowerCase()}
                           data-details={serialized}
                         >
-                          <div class="relative h-56 overflow-hidden bg-(--clr-ink)/5">
-                            <img
-                              src={item.image_url || defaultImage}
-                              alt={item.name}
-                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                              loading="lazy"
-                            />
-                            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end gap-2">
-                              <h4 class="text-xl font-bold text-white drop-shadow-md">
+                          {showMenuImages && item.image_url ? (
+                            <div class="relative h-56 overflow-hidden bg-(--clr-ink)/5">
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                width="1000"
+                                height="750"
+                                class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                              <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-2">
+                                <h4 class="text-left text-xl font-bold text-white drop-shadow-md">
+                                  {item.name}
+                                </h4>
+                                <span class="rounded-xl bg-white px-3 py-1 text-sm font-bold text-black shadow-lg">
+                                  {fmt(finalPrice)}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div class="flex items-start justify-between gap-4 p-6 pb-0">
+                              <h4 class="text-left text-lg font-bold text-(--clr-ink)">
                                 {item.name}
                               </h4>
-                              <span class="bg-white text-black font-bold px-3 py-1 text-sm shadow-lg rounded-xl">
+                              <span class="shrink-0 text-sm font-bold text-(--clr-ink)">
                                 {fmt(finalPrice)}
                               </span>
                             </div>
+                          )}
+                          <div class="flex-1 p-6">
+                            {item.description && (
+                              <p class="text-left text-sm leading-relaxed text-(--clr-ink)/60">
+                                {item.description}
+                              </p>
+                            )}
                           </div>
-                          <div class="p-6 flex-1">
-                            <p class="text-(--clr-ink)/60 text-sm leading-relaxed">
-                              {item.description}
-                            </p>
-                          </div>
-                        </div>
+                        </button>
                       )
                     })}
                   </div>
@@ -557,6 +595,18 @@ const fmt = (n: number) =>
           maximumFractionDigits: 0,
         }).format(n)
 
+      const escapeHtml = (value: unknown) =>
+        String(value ?? '').replace(/[&<>"']/g, (character) => {
+          const entities: Record<string, string> = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+          }
+          return entities[character]
+        })
+
       function renderIntensityDots(intensity: number): string {
         const max = 5
         const filled = Math.min(Math.max(Math.round(intensity), 0), max)
@@ -579,12 +629,14 @@ const fmt = (n: number) =>
           details.bitterness ? { label: 'Amargor', value: details.bitterness } : null,
           details.sugar ? { label: 'Azúcar', value: details.sugar } : null,
         ].filter(Boolean) as { label: string; value: string }[]
+        const name = escapeHtml(data.name)
+        const description = escapeHtml(data.description)
 
         if (isMin) {
           return `
         <div>
-          <h3 style="font-size:1.25rem;font-weight:700;color:black;line-height:1.2;margin:0 0 8px;">${data.name}</h3>
-          ${data.description ? `<p style="font-size:0.875rem;color:rgba(0,0,0,0.5);line-height:1.6;margin:0;">${data.description}</p>` : ''}
+          <h3 style="font-size:1.25rem;font-weight:700;color:black;line-height:1.2;margin:0 0 8px;">${name}</h3>
+          ${description ? `<p style="font-size:0.875rem;color:rgba(0,0,0,0.5);line-height:1.6;margin:0;">${description}</p>` : ''}
         </div>
         <div style="margin-top:1.5rem;border-top:1px solid rgba(0,0,0,0.08);">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid rgba(0,0,0,0.08);">
@@ -594,21 +646,12 @@ const fmt = (n: number) =>
               ${hasOffer ? `<span style="display:block;font-size:0.75rem;color:rgba(0,0,0,0.3);text-decoration:line-through;">${fmtC(data.price)}</span>` : ''}
             </div>
           </div>
-          ${
-            data.intensity
-              ? `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid rgba(0,0,0,0.08);">
-            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">Intensidad</span>
-            <div style="display:flex;gap:4px;align-items:center;">${renderIntensityDots(data.intensity)}</div>
-          </div>`
-              : ''
-          }
           ${detailRows
             .map(
               (row) => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 0;border-bottom:1px solid rgba(0,0,0,0.08);">
             <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">${row.label}</span>
-            <span style="font-size:0.875rem;font-weight:700;color:black;">${row.value}</span>
+            <span style="font-size:0.875rem;font-weight:700;color:black;">${escapeHtml(row.value)}</span>
           </div>`,
             )
             .join('')}
@@ -618,7 +661,7 @@ const fmt = (n: number) =>
           <div style="padding:1rem 0;">
             <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);display:block;margin-bottom:10px;">Notas</span>
             <div style="display:flex;flex-wrap:wrap;gap:8px;">
-              ${notes.map((n) => `<span style="padding:4px 12px;border:1px solid rgba(0,0,0,0.15);font-size:11px;font-weight:700;letter-spacing:0.1em;color:rgba(0,0,0,0.6);">${n}</span>`).join('')}
+              ${notes.map((n) => `<span style="padding:4px 12px;border:1px solid rgba(0,0,0,0.15);font-size:11px;font-weight:700;letter-spacing:0.1em;color:rgba(0,0,0,0.6);">${escapeHtml(n)}</span>`).join('')}
             </div>
           </div>`
               : ''
@@ -628,8 +671,8 @@ const fmt = (n: number) =>
         } else {
           return `
         <div>
-          <h3 style="font-size:1.25rem;font-weight:700;font-style:italic;color:var(--clr-ink);line-height:1.2;margin:0 0 8px;">${data.name}</h3>
-          ${data.description ? `<p style="font-size:0.875rem;color:rgba(0,0,0,0.5);line-height:1.6;margin:0;">${data.description}</p>` : ''}
+          <h3 style="font-size:1.25rem;font-weight:700;font-style:italic;color:var(--clr-ink);line-height:1.2;margin:0 0 8px;">${name}</h3>
+          ${description ? `<p style="font-size:0.875rem;color:rgba(0,0,0,0.5);line-height:1.6;margin:0;">${description}</p>` : ''}
         </div>
         <div style="margin-top:1.5rem;background:white;border-radius:16px;border:1px solid rgba(0,0,0,0.08);overflow:hidden;">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(0,0,0,0.06);">
@@ -639,21 +682,12 @@ const fmt = (n: number) =>
               ${hasOffer ? `<span style="display:block;font-size:0.75rem;color:rgba(0,0,0,0.3);text-decoration:line-through;">${fmtC(data.price)}</span>` : ''}
             </div>
           </div>
-          ${
-            data.intensity
-              ? `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(0,0,0,0.06);">
-            <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">Intensidad</span>
-            <div style="display:flex;gap:5px;align-items:center;">${renderIntensityDots(data.intensity)}</div>
-          </div>`
-              : ''
-          }
           ${detailRows
             .map(
               (row) => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid rgba(0,0,0,0.06);">
             <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);">${row.label}</span>
-            <span style="font-size:0.875rem;font-weight:700;color:var(--clr-ink);">${row.value}</span>
+            <span style="font-size:0.875rem;font-weight:700;color:var(--clr-ink);">${escapeHtml(row.value)}</span>
           </div>`,
             )
             .join('')}
@@ -664,7 +698,7 @@ const fmt = (n: number) =>
         <div style="margin-top:1rem;">
           <span style="font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,0,0,0.3);display:block;margin-bottom:10px;">Notas</span>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            ${notes.map((n) => `<span style="padding:5px 12px;border-radius:999px;border:1px solid rgba(0,0,0,0.15);font-size:11px;font-weight:700;color:rgba(0,0,0,0.6);">${n}</span>`).join('')}
+            ${notes.map((n) => `<span style="padding:5px 12px;border-radius:999px;border:1px solid rgba(0,0,0,0.15);font-size:11px;font-weight:700;color:rgba(0,0,0,0.6);">${escapeHtml(n)}</span>`).join('')}
           </div>
         </div>`
             : ''
@@ -703,13 +737,13 @@ const fmt = (n: number) =>
 
         const imgSrc = data.image || data.image_url || ''
         const offerBadge =
-          data.in_offer && data.offer_percent
+          imgSrc && data.in_offer && data.offer_percent
             ? `<span style="position:absolute;top:12px;left:12px;background:black;color:white;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:4px 10px;">-${data.offer_percent}%</span>`
             : ''
 
         sheet.innerHTML = `
-      <div style="flex-shrink:0;position:relative;height:200px;background:#e0e0e0;overflow:hidden;">
-        <img src="${imgSrc}" alt="" style="width:100%;height:100%;object-fit:cover;" />
+      <div style="flex-shrink:0;position:relative;height:${imgSrc ? '200px' : '52px'};background:${imgSrc ? '#e0e0e0' : 'transparent'};overflow:hidden;">
+        ${imgSrc ? '<img data-menu-item-image alt="" style="width:100%;height:100%;object-fit:cover;" />' : ''}
         ${offerBadge}
         <button data-close style="
           position:absolute;top:12px;right:12px;
@@ -726,6 +760,8 @@ const fmt = (n: number) =>
         ${buildModalContent(data)}
       </div>
     `
+        const image = sheet.querySelector<HTMLImageElement>('[data-menu-item-image]')
+        if (image) image.src = imgSrc
 
         overlay.appendChild(sheet)
         document.body.appendChild(overlay)
@@ -764,10 +800,13 @@ const fmt = (n: number) =>
         modalContent.innerHTML = buildModalContent(data)
 
         const img = document.createElement('img')
-        img.src = data.image || data.image_url || ''
-        img.className = 'w-full h-full object-cover'
+        const imageSource = data.image || data.image_url || ''
+        img.src = imageSource
+        img.alt = data.name || ''
+        img.className = 'h-full w-full object-cover'
         modalImageContainer.innerHTML = ''
-        modalImageContainer.appendChild(img)
+        modalImageContainer.classList.toggle('hidden', !imageSource)
+        if (imageSource) modalImageContainer.appendChild(img)
         modal.showModal()
       }
 

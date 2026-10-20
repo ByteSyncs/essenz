@@ -34,204 +34,140 @@ if (!org || org.slug !== slug) {
 const u = {
   email: user.email,
   cn: org.name,
+  slug: org.slug,
 }
 
-const selectablePlans = Object.values(PLANS).filter((p) => p.id !== 'custom')
+const planOptions = Object.values(PLANS)
+  .filter((plan) => plan.id !== 'custom')
+  .map((plan) => ({
+    id: plan.id,
+    name: plan.name.replace('Plan ', ''),
+    features: plan.features,
+    price: plan.price,
+    currency: plan.currency,
+    priceLabel: plan.price != null ? `$${plan.price} ${plan.currency} / mes` : 'A consultar',
+  }))
+
+const choiceBase =
+  'group/choice relative rounded-(--radius-card) border-2 border-(--clr-ink)/12 bg-white touch-manipulation select-none'
+const choiceInteractive =
+  'cursor-pointer transition-[border-color,background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:border-(--clr-ink)/35 active:scale-[0.98] has-[:checked]:border-(--clr-ink) has-[:checked]:bg-(--clr-ink)/[0.03] has-[:checked]:hover:border-(--clr-ink) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-(--clr-accent) motion-reduce:transition-none'
+const indicatorClass =
+  'flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-(--clr-ink)/20 transition-[background-color,border-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-has-[:checked]/choice:border-(--clr-ink) group-has-[:checked]/choice:bg-(--clr-ink) motion-reduce:transition-none'
+const indicatorIconClass =
+  'size-3 scale-50 text-white opacity-0 transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-has-[:checked]/choice:scale-100 group-has-[:checked]/choice:opacity-100 motion-reduce:transition-none'
 ---
 
-<Layout title="Renueva tu plan" description="No pierdas tu ventaja ante la competencia">
-  <main class="min-h-screen bg-[--clr-bg] flex items-center justify-center px-4 py-16">
-    <div class="w-full max-w-2xl">
-      <div class="mb-10 text-center">
-        <span
-          class="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-[--clr-accent] mb-3 opacity-80"
-        >
-          Suscripción
-        </span>
+<Layout
+  title="Renová tu plan | Essenz"
+  description="Elegí un plan y pagá para volver a usar tu panel de Essenz."
+>
+  <main class="flex min-h-svh items-center justify-center bg-(--clr-bg) px-4 py-10 sm:py-16">
+    <div class="enter w-full max-w-2xl">
+      <header class="mb-8 text-center">
         <h1
-          class="text-4xl md:text-5xl text-[--clr-ink-dark] leading-tight mb-2"
-          style="font-family: var(--font-display);"
+          class="text-balance font-(family-name:--font-display) text-4xl leading-[1.05] font-semibold tracking-[-0.02em] text-(--clr-ink-dark) md:text-5xl"
         >
           Renová tu plan
         </h1>
-        <p class="text-[--clr-ink] opacity-60 text-sm" style="font-family: var(--font-body);">
-          Elegí el plan que mejor se adapta a tu negocio
+        <p class="mx-auto mt-3 max-w-md text-balance text-base leading-relaxed text-(--clr-ink)/70">
+          Elegí un plan y pagá para volver a usar tu panel.
         </p>
-      </div>
+      </header>
 
       <div
-        class="bg-white border border-[color-mix(in_srgb,var(--clr-ink)_8%,transparent)] rounded-[--radius-card] overflow-hidden shadow-sm"
+        class="overflow-hidden rounded-(--radius-card) border border-(--clr-ink)/10 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.05)]"
       >
-        <div
-          class="px-7 pt-7 pb-6 border-b border-[color-mix(in_srgb,var(--clr-ink)_8%,transparent)]"
-        >
-          <p
-            class="text-[0.65rem] font-semibold tracking-widest uppercase text-[--clr-accent] mb-3 opacity-70"
-          >
-            Tus datos
+        <div class="border-b border-(--clr-ink)/10 px-5 py-4 sm:px-7">
+          <p class="text-xs text-(--clr-ink)/60">Cuenta a renovar</p>
+          <p class="mt-1 text-sm font-semibold text-(--clr-ink-dark) wrap-anywhere">
+            {u.cn ?? '—'}
           </p>
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-[--clr-accent] opacity-70 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.8"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"
-                ></path>
-              </svg>
-              <span
-                class="text-[--clr-ink-dark] font-semibold text-sm"
-                style="font-family: var(--font-ui);"
-              >
-                {u.cn ?? '—'}
-              </span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg
-                class="w-4 h-4 text-[--clr-accent] opacity-70 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.8"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 6.75L2.25 6.75"
-                ></path>
-              </svg>
-              <span
-                class="text-[--clr-ink] opacity-70 text-sm"
-                style="font-family: var(--font-body);"
-              >
-                {u.email ?? '—'}
-              </span>
-            </div>
-          </div>
+          <p class="text-sm text-(--clr-ink)/70 wrap-anywhere">{u.email ?? '—'}</p>
         </div>
 
-        <form id="billing-form" class="px-7 py-7" method="POST">
-          <input type="hidden" name="email" value={u.email ?? ''} />
-          <input type="hidden" name="cafe" value={u.cn ?? ''} />
-          <input type="hidden" name="plan_id" id="selected-plan-id" value="" />
+        <form id="billing-form" novalidate class="px-5 py-6 sm:px-7 sm:py-7">
+          <fieldset class="m-0 min-w-0 border-0 p-0">
+            <legend class="mb-4 p-0 text-base font-semibold text-(--clr-ink-dark)">
+              Elegí tu plan
+            </legend>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {
+                planOptions.map((plan) => (
+                  <label class:list={[choiceBase, choiceInteractive, 'flex flex-col p-5']}>
+                    <input
+                      type="radio"
+                      name="plan_id"
+                      value={plan.id}
+                      data-name={plan.name}
+                      data-price={plan.priceLabel}
+                      class="sr-only"
+                      required
+                    />
+                    <span class="flex items-center justify-between gap-3">
+                      <span class="min-w-0 font-(family-name:--font-display) text-xl font-semibold text-(--clr-ink-dark) wrap-anywhere">
+                        {plan.name}
+                      </span>
+                      <span class="flex shrink-0 items-center gap-2">
+                        <span class="hidden text-xs font-semibold text-(--clr-ink) group-has-checked/choice:inline">
+                          Seleccionado
+                        </span>
+                        <span aria-hidden="true" class={indicatorClass}>
+                          <svg viewBox="0 0 12 12" fill="none" class={indicatorIconClass}>
+                            <path
+                              d="M2.5 6.5l2.5 2.5 4.5-5"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </span>
+                      </span>
+                    </span>
 
-          <p
-            class="text-[0.65rem] font-semibold tracking-widest uppercase text-[--clr-accent] mb-4 opacity-70"
-          >
-            Elegí tu plan
-          </p>
+                    <span class="mt-3 flex items-baseline gap-2">
+                      <span class="text-3xl font-semibold tabular-nums text-(--clr-ink-dark)">
+                        {plan.price != null ? `$${plan.price}` : 'A consultar'}
+                      </span>
+                      {plan.price != null && (
+                        <span class="text-sm text-(--clr-ink)/60">{plan.currency} / mes</span>
+                      )}
+                    </span>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8" id="plan-cards">
-            {
-              selectablePlans.map((plan) => (
-                <button
-                  type="button"
-                  data-plan-id={plan.id}
-                  data-plan-name={plan.name}
-                  class:list={[
-                    'plan-card group relative text-left w-full rounded-[--radius-card] border-2 px-5 py-5 transition-all duration-200 cursor-pointer',
-                    'border-[color-mix(in_srgb,var(--clr-ink)_12%,transparent)]',
-                    'hover:border-[--clr-accent] hover:shadow-md',
-                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-[--clr-accent]',
-                  ]}
-                  aria-pressed="false"
-                >
-                  <span class="plan-check absolute top-3.5 right-3.5 w-5 h-5 rounded-full border-2 border-[color-mix(in_srgb,var(--clr-ink)_20%,transparent)] flex items-center justify-center transition-all duration-200">
-                    <svg
-                      class="w-2.5 h-2.5 text-white opacity-0 scale-0 transition-all duration-150 plan-check-icon"
-                      fill="currentColor"
-                      viewBox="0 0 12 12"
-                    >
-                      <path
-                        d="M10 3L5 8.5 2 5.5"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        fill="none"
-                      />
-                    </svg>
-                  </span>
+                    <ul class="mt-5 flex flex-1 flex-col gap-2.5 border-t border-(--clr-ink)/10 pt-5">
+                      {plan.features.map((feature) => (
+                        <li class="flex items-start gap-2.5 text-sm leading-snug text-(--clr-ink)/80">
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            class="mt-0.5 size-3.5 shrink-0 text-(--clr-green)"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2 6l3 3 5-5" />
+                          </svg>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </label>
+                ))
+              }
+            </div>
+          </fieldset>
 
-                  <p
-                    class="text-[--clr-ink-dark] font-semibold text-base mb-1 pr-7"
-                    style="font-family: var(--font-display);"
-                  >
-                    {plan.name}
-                  </p>
-
-                  <p
-                    class="text-[--clr-accent] font-bold text-2xl mb-3"
-                    style="font-family: var(--font-ui);"
-                  >
-                    {plan.price != null ? `$${plan.price} ${plan.currency}` : 'A consultar'}
-                    {plan.price != null && (
-                      <span class="text-xs font-normal text-[--clr-ink] opacity-40 ml-1">/mes</span>
-                    )}
-                  </p>
-
-                  <ul class="flex flex-col gap-1.5">
-                    {plan.features.map((f) => (
-                      <li
-                        class="flex items-center gap-2 text-xs text-[--clr-ink] opacity-60"
-                        style="font-family: var(--font-body);"
-                      >
-                        <svg
-                          class="w-3 h-3 text-[--clr-green] shrink-0"
-                          fill="none"
-                          viewBox="0 0 12 12"
-                          stroke="currentColor"
-                          stroke-width="2.5"
-                        >
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M2 6l3 3 5-5" />
-                        </svg>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </button>
-              ))
-            }
-          </div>
-
-          <input type="hidden" name="payment_method" id="selected-payment-method" value="mp" />
-
-          <p
-            class="text-[0.65rem] font-semibold tracking-widest uppercase text-[--clr-accent] mb-4 opacity-70"
-          >
-            Método de pago
-          </p>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-            <button
-              type="button"
-              id="pm-mercadopago"
-              data-pm="mp"
-              class="payment-method-card relative text-left w-full rounded-[--radius-card] border-2 px-5 py-4 transition-all duration-200 cursor-pointer border-[--clr-accent] bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)] shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[--clr-accent]"
-              aria-pressed="true"
-            >
-              <span
-                class="pm-check absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 bg-[--clr-accent] border-[--clr-accent]"
-              >
-                <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 12 12">
-                  <path
-                    d="M10 3L5 8.5 2 5.5"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    fill="none"></path>
-                </svg>
-              </span>
-              <div class="flex items-center gap-2.5 pr-7">
+          <fieldset class="m-0 mt-8 min-w-0 border-0 p-0">
+            <legend class="mb-4 p-0 text-base font-semibold text-(--clr-ink-dark)">
+              Cómo querés pagar
+            </legend>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label class:list={[choiceBase, choiceInteractive, 'flex items-center gap-3 p-4']}>
+                <input type="radio" name="method" value="mp" class="sr-only" checked />
                 <svg
-                  class="w-7 h-7 shrink-0"
+                  aria-hidden="true"
+                  class="size-8 shrink-0"
                   viewBox="0 0 48 48"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -242,238 +178,240 @@ const selectablePlans = Object.values(PLANS).filter((p) => p.id !== 'custom')
                     fill="white"></path>
                   <circle cx="24" cy="24" r="6" fill="#009EE3"></circle>
                 </svg>
-                <div>
-                  <p
-                    class="text-[--clr-ink-dark] font-semibold text-sm leading-tight"
-                    style="font-family: var(--font-ui);"
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-semibold text-(--clr-ink-dark)">MercadoPago</span>
+                  <span class="mt-0.5 block text-xs leading-snug text-(--clr-ink)/65">
+                    Tarjetas, débito y saldo de MercadoPago
+                  </span>
+                </span>
+                <span aria-hidden="true" class={indicatorClass}>
+                  <svg viewBox="0 0 12 12" fill="none" class={indicatorIconClass}>
+                    <path
+                      d="M2.5 6.5l2.5 2.5 4.5-5"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"></path>
+                  </svg>
+                </span>
+              </label>
+
+              <label
+                class:list={[choiceBase, 'flex cursor-not-allowed items-center gap-3 p-4']}
+                aria-disabled="true"
+              >
+                <input type="radio" name="method" value="card" class="sr-only" disabled />
+                <span class="flex min-w-0 flex-1 items-center gap-3 opacity-55">
+                  <svg
+                    aria-hidden="true"
+                    class="size-8 shrink-0"
+                    viewBox="0 0 48 48"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    MercadoPago
-                  </p>
-                  <p
-                    class="text-[--clr-ink] opacity-50 text-xs mt-0.5"
-                    style="font-family: var(--font-body);"
-                  >
-                    Tarjetas, débito y saldo MP
-                  </p>
-                </div>
+                    <rect width="48" height="48" rx="8" fill="#635BFF"></rect>
+                    <path
+                      d="M22.5 19.5c0-1.1.9-1.5 2.3-1.5 2.1 0 4.7.6 6.7 1.7v-6.3c-2.2-.9-4.5-1.2-6.7-1.2-5.5 0-9.1 2.9-9.1 7.6 0 7.4 10.2 6.2 10.2 9.4 0 1.3-1.1 1.7-2.6 1.7-2.3 0-5.2-.9-7.5-2.2v6.4c2.5 1.1 5.1 1.6 7.5 1.6 5.7 0 9.5-2.8 9.5-7.6-.1-8-10.3-6.6-10.3-9.6z"
+                      fill="white"></path>
+                  </svg>
+                  <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-(--clr-ink-dark)">
+                      Tarjeta internacional
+                    </span>
+                    <span class="mt-0.5 block text-xs leading-snug text-(--clr-ink)/65">
+                      Visa, Mastercard, Amex
+                    </span>
+                  </span>
+                </span>
+                <span
+                  class="shrink-0 rounded-full bg-(--clr-ink)/8 px-2.5 py-1 text-[11px] font-semibold text-(--clr-ink)"
+                >
+                  Próximamente
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="mt-8 border-t border-(--clr-ink)/10 pt-6">
+            <div
+              aria-live="polite"
+              class="mb-4 flex items-baseline justify-between gap-4 rounded-(--radius-card) bg-(--clr-ink)/4 px-4 py-3.5"
+            >
+              <div class="min-w-0">
+                <p class="text-xs text-(--clr-ink)/60">Plan elegido</p>
+                <p
+                  id="summary-name"
+                  class="mt-0.5 text-sm font-semibold text-(--clr-ink-dark) wrap-anywhere"
+                >
+                  Todavía no elegiste uno
+                </p>
               </div>
+              <p
+                id="summary-price"
+                class="shrink-0 text-sm font-semibold tabular-nums text-(--clr-ink-dark)"
+              >
+                —
+              </p>
+            </div>
+
+            <p id="form-message" role="alert" hidden class="mb-4 text-center text-sm text-red-600">
+            </p>
+
+            <button
+              type="submit"
+              id="submit-button"
+              data-slug={u.slug}
+              class="flex min-h-12 w-full touch-manipulation select-none items-center justify-center gap-2 rounded-(--radius-btn) bg-(--clr-ink-dark) px-6 text-sm font-semibold text-(--clr-white) transition-[transform,background-color,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-(--clr-accent) active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-accent) disabled:cursor-wait disabled:opacity-60 disabled:hover:bg-(--clr-ink-dark) disabled:active:scale-100 motion-reduce:transition-none"
+            >
+              <span id="submit-label">Continuar al pago</span>
+              <svg
+                aria-hidden="true"
+                class="size-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path>
+              </svg>
             </button>
 
-            <div
-              class="relative text-left w-full rounded-[--radius-card] border-2 px-5 py-4 border-[color-mix(in_srgb,var(--clr-ink)_8%,transparent)] bg-[color-mix(in_srgb,var(--clr-ink)_2%,transparent)] opacity-60 cursor-not-allowed select-none"
-              aria-disabled="true"
-            >
-              <span
-                class="absolute top-3 right-3 text-[0.6rem] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--clr-accent)_12%,transparent)] text-[--clr-accent]"
-                style="font-family: var(--font-ui);"
-              >
-                Próximamente
-              </span>
-              <div class="flex items-center gap-2.5 pr-24">
-                <svg
-                  class="w-7 h-7 shrink-0"
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect width="48" height="48" rx="8" fill="#635BFF"></rect>
-                  <path
-                    d="M22.5 19.5c0-1.1.9-1.5 2.3-1.5 2.1 0 4.7.6 6.7 1.7v-6.3c-2.2-.9-4.5-1.2-6.7-1.2-5.5 0-9.1 2.9-9.1 7.6 0 7.4 10.2 6.2 10.2 9.4 0 1.3-1.1 1.7-2.6 1.7-2.3 0-5.2-.9-7.5-2.2v6.4c2.5 1.1 5.1 1.6 7.5 1.6 5.7 0 9.5-2.8 9.5-7.6-.1-8-10.3-6.6-10.3-9.6z"
-                    fill="white"></path>
-                </svg>
-                <div>
-                  <p
-                    class="text-[--clr-ink-dark] font-semibold text-sm leading-tight"
-                    style="font-family: var(--font-ui);"
-                  >
-                    Tarjeta internacional
-                  </p>
-                  <p
-                    class="text-[--clr-ink] opacity-50 text-xs mt-0.5"
-                    style="font-family: var(--font-body);"
-                  >
-                    Visa, Mastercard, Amex
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            id="plan-summary"
-            class="hidden mb-6 px-4 py-3.5 rounded-[--radius-card] bg-[color-mix(in_srgb,var(--clr-accent)_6%,transparent)] border border-[color-mix(in_srgb,var(--clr-accent)_20%,transparent)]"
-          >
-            <p
-              class="text-xs text-[--clr-ink] opacity-60 mb-0.5"
-              style="font-family: var(--font-body);"
-            >
-              Plan seleccionado
-            </p>
-            <p
-              id="plan-summary-name"
-              class="text-[--clr-ink-dark] font-semibold text-sm"
-              style="font-family: var(--font-ui);"
-            >
-              —
+            <p class="mt-4 text-center text-xs leading-relaxed text-(--clr-ink)/60">
+              Te llevamos a MercadoPago para completar el pago.
             </p>
           </div>
-
-          <p
-            id="plan-error"
-            class="hidden text-xs text-red-500 mb-3 text-center"
-            style="font-family: var(--font-body);"
-          >
-            Por favor, elegí un plan para continuar.
-          </p>
-
-          <button
-            type="submit"
-            id="submit-btn"
-            class="w-full py-4 px-6 text-sm font-semibold tracking-wide uppercase transition-all duration-200 cursor-pointer bg-[--clr-ink-dark] text-[--clr-white] hover:bg-[--clr-accent] rounded-[--radius-btn] focus:outline-none focus-visible:ring-2 focus-visible:ring-[--clr-accent] focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
-            style="font-family: var(--font-ui); letter-spacing: 0.08em;"
-          >
-            Continuar al pago
-            <svg
-              class="inline-block w-4 h-4 ml-2 -mt-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path>
-            </svg>
-          </button>
-
-          <p
-            class="text-center text-[0.65rem] text-[--clr-ink] opacity-40 mt-4"
-            style="font-family: var(--font-body);"
-          >
-            Serás redirigido a MercadoPago para completar el pago de forma segura.
-          </p>
         </form>
       </div>
     </div>
   </main>
+
+  <style>
+    :global(html) {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .enter {
+        opacity: 1;
+        transform: translateY(0);
+        transition:
+          opacity 420ms cubic-bezier(0.23, 1, 0.32, 1),
+          transform 420ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      @starting-style {
+        .enter {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+    }
+  </style>
 </Layout>
 
 <script>
   import * as Sentry from '@sentry/astro'
 
-  const paymentCards = document.querySelectorAll<HTMLButtonElement>('.payment-method-card')
-  const selectedPaymentInput = document.getElementById(
-    'selected-payment-method',
-  ) as HTMLInputElement
-
-  paymentCards.forEach((pm) => {
-    pm.addEventListener('click', () => {
-      paymentCards.forEach((p) => {
-        p.classList.remove(
-          'border-[--clr-accent]',
-          'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
-          'shadow-md',
-        )
-        p.setAttribute('aria-pressed', 'false')
-        const check = p.querySelector('.pm-check') as HTMLElement
-        if (check) {
-          check.classList.remove('bg-[--clr-accent]', 'border-[--clr-accent]')
-          check.classList.add('border-[color-mix(in_srgb,var(--clr-ink)_20%,transparent)]')
-        }
-      })
-      pm.classList.add(
-        'border-[--clr-accent]',
-        'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
-        'shadow-md',
-      )
-      pm.setAttribute('aria-pressed', 'true')
-      const check = pm.querySelector('.pm-check') as HTMLElement
-      if (check) {
-        check.classList.add('bg-[--clr-accent]', 'border-[--clr-accent]')
-        check.classList.remove('border-[color-mix(in_srgb,var(--clr-ink)_20%,transparent)]')
-      }
-      selectedPaymentInput.value = pm.dataset.pm ?? 'mercadopago'
-    })
-  })
-
-  const cards = document.querySelectorAll<HTMLButtonElement>('.plan-card')
-  const selectedPlanInput = document.getElementById('selected-plan-id') as HTMLInputElement
-  const planSummary = document.getElementById('plan-summary')!
-  const planSummaryName = document.getElementById('plan-summary-name')!
-  const planError = document.getElementById('plan-error')!
   const form = document.getElementById('billing-form') as HTMLFormElement
+  const submitButton = document.getElementById('submit-button') as HTMLButtonElement
+  const submitLabel = document.getElementById('submit-label') as HTMLElement
+  const message = document.getElementById('form-message') as HTMLElement
+  const summaryName = document.getElementById('summary-name') as HTMLElement
+  const summaryPrice = document.getElementById('summary-price') as HTMLElement
 
-  function selectCard(card: HTMLButtonElement) {
-    cards.forEach((c) => {
-      c.classList.remove(
-        'border-[--clr-accent]',
-        'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
-        'shadow-md',
-      )
-      c.setAttribute('aria-pressed', 'false')
-      const check = c.querySelector('.plan-check') as HTMLElement
-      const checkIcon = c.querySelector('.plan-check-icon') as HTMLElement
-      check.classList.remove('bg-[--clr-accent]', 'border-[--clr-accent]')
-      checkIcon.classList.add('opacity-0', 'scale-0')
-      checkIcon.classList.remove('opacity-100', 'scale-100')
-    })
+  const idleLabel = submitLabel.textContent ?? ''
+  const emptyName = summaryName.textContent ?? ''
+  const planInputs = form.querySelectorAll<HTMLInputElement>('input[name="plan_id"]')
 
-    card.classList.add(
-      'border-[--clr-accent]',
-      'bg-[color-mix(in_srgb,var(--clr-accent)_4%,transparent)]',
-      'shadow-md',
-    )
-    card.setAttribute('aria-pressed', 'true')
-    const check = card.querySelector('.plan-check') as HTMLElement
-    const checkIcon = card.querySelector('.plan-check-icon') as HTMLElement
-    check.classList.add('bg-[--clr-accent]', 'border-[--clr-accent]')
-    checkIcon.classList.remove('opacity-0', 'scale-0')
-    checkIcon.classList.add('opacity-100', 'scale-100')
-
-    const planId = card.dataset.planId ?? ''
-    const planName = card.dataset.planName ?? ''
-    selectedPlanInput.value = planId
-    planSummaryName.textContent = planName
-    planSummary.classList.remove('hidden')
-    planError.classList.add('hidden')
+  function getSelectedPlan() {
+    return form.querySelector<HTMLInputElement>('input[name="plan_id"]:checked')
   }
 
-  cards.forEach((card) => {
-    card.addEventListener('click', () => selectCard(card))
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        selectCard(card)
+  function syncSummary() {
+    const selected = getSelectedPlan()
+    summaryName.textContent = selected?.dataset.name ?? emptyName
+    summaryPrice.textContent = selected?.dataset.price ?? '—'
+  }
+
+  function showMessage(text: string) {
+    message.textContent = text
+    message.hidden = false
+  }
+
+  function clearMessage() {
+    message.textContent = ''
+    message.hidden = true
+  }
+
+  function setLoading(isLoading: boolean) {
+    submitButton.disabled = isLoading
+    submitButton.setAttribute('aria-busy', String(isLoading))
+    submitLabel.textContent = isLoading ? 'Abriendo MercadoPago…' : idleLabel
+  }
+
+  form.addEventListener('change', (event) => {
+    const target = event.target as HTMLInputElement
+    if (target.name !== 'plan_id') return
+    syncSummary()
+    clearMessage()
+  })
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (submitButton.disabled) return
+
+    const selected = getSelectedPlan()
+    if (!selected) {
+      showMessage('Elegí un plan para continuar.')
+      planInputs[0]?.focus()
+      return
+    }
+
+    const method =
+      form.querySelector<HTMLInputElement>('input[name="method"]:checked')?.value ?? 'mp'
+
+    clearMessage()
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/payments/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan_id: selected.value,
+          method,
+          slug: submitButton.dataset.slug,
+        }),
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload?.url) {
+        throw new Error(`Payment session failed - ${response.status}`)
       }
-    })
+
+      const target = new URL(payload.url)
+      if (target.protocol !== 'https:') {
+        throw new Error('Payment session returned a non-https URL')
+      }
+
+      window.location.assign(target.href)
+    } catch (error) {
+      console.error('[PAYMENT_SESSION_ERROR]', error)
+      Sentry.captureException(error)
+      showMessage('No pudimos abrir MercadoPago. Probá de nuevo en unos minutos.')
+      setLoading(false)
+    }
   })
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault()
-
-    if (!selectedPlanInput.value) {
-      planError.classList.remove('hidden')
-      planSummary.classList.add('hidden')
-      return
-    }
-
-    const res = await fetch('/api/payments/create-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        plan_id: selectedPlanInput.value,
-        method: selectedPaymentInput.value,
-      }),
-    })
-
-    if (!res.ok) {
-      console.error('Payment session failed', await res.json())
-      Sentry.captureException(new Error(`Payment session failed - ${res.status}`))
-      return
-    }
-
-    const data = await res.json()
-    return (window.location.href = data.url)
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) setLoading(false)
+    syncSummary()
   })
+
+  syncSummary()
 </script>

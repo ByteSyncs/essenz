@@ -53,6 +53,10 @@ export const POST: APIRoute = async ({ locals, request, cookies }) => {
     if (session) {
       const { access_token, refresh_token } = session
 
+      cookies.delete('waiting_verify_email', {
+        path: '/',
+      })
+
       cookies.set('sb-access-token', access_token, {
         path: '/',
         secure: true,

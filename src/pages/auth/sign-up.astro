@@ -8,38 +8,37 @@ const plan = getPlanMeta(planParam)
 
 <AuthLayout
   title={`Crear cuenta — Essenz`}
-  description="Comenzá a digitalizar tu cafetería hoy. Creá tu cuenta en Essenz y empezá a crecer."
+  description="Creá una cuenta para tu negocio gastronómico en Essenz."
 >
   <div class="min-h-screen relative flex items-center justify-center overflow-hidden">
     <div class="fixed inset-0 pointer-events-none z-0 opacity-[0.025] bg-noise"></div>
 
-    <main class="relative z-10 w-full max-w-120 px-6 py-20 lg:py-24">
+    <main class="relative z-10 w-full max-w-120 px-6 py-10">
       <div class="animate-fade-up">
         <div
-          class="inline-flex items-center gap-2 px-3 py-1.5 mb-6 border border-(--clr-accent)/20 bg-(--clr-accent)/10 shadow-[0_2px_10px_-3px_rgba(var(--clr-accent),0.1)]"
+          class="mb-6 inline-flex items-center gap-2 border border-(--clr-accent)/20 bg-(--clr-accent)/10 px-3 py-1.5"
         >
-          <span class="w-1.5 h-1.5 rounded-full bg-(--clr-accent) inline-block animate-pulse"
-          ></span>
+          <span class="inline-block size-1.5 rounded-full bg-(--clr-accent)"></span>
           <span
             class="font-family-name:--font-ui text-[0.72rem] text-(--clr-accent) font-medium tracking-widest uppercase"
           >
-            {plan.name} · {plan.price ? `$${plan.price}` : 'Consultar'}
+            {plan.name} · {plan.price ? `USD $${plan.price} / mes` : 'Consultar'}
           </span>
         </div>
 
         <h1
           class="font-family-name:--font-display text-[clamp(2rem,5vw,2.5rem)] leading-[1.1] text-(--clr-ink-dark) mb-4 tracking-tight"
         >
-          No es un gasto.<br /><em>Es tu próxima inversión.</em>
+          Empezá por tu negocio.
         </h1>
         <p
           class="font-family-name:--font-body text-[1rem] leading-relaxed text-(--clr-ink)/60 mb-10 max-w-100"
         >
-          Creá tu cuenta y empezá hoy mismo.
+          Creá la cuenta y verificá tu correo. Después continuarás al pago del plan seleccionado.
         </p>
 
         <form id="register-form" novalidate class="flex flex-col gap-4" autocomplete="on">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-up animate-delay-100">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div class="flex flex-col gap-1.5">
               <label
                 for="ownerName"
@@ -52,10 +51,14 @@ const plan = getPlanMeta(planParam)
                 name="ownerName"
                 placeholder="Ezequiel Saucedo"
                 required
-                class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+                data-error-for="client_name"
+                aria-describedby="err-client_name"
+                aria-invalid="false"
+                class="w-full border border-(--clr-ink)/14 bg-(--clr-white)/80 px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) outline-none transition-[border-color,box-shadow] focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10 aria-invalid:border-red-600"
               />
               <span
-                id="err-ownerName"
+                id="err-client_name"
+                role="alert"
                 class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
                 >Campo requerido</span
               >
@@ -64,7 +67,7 @@ const plan = getPlanMeta(planParam)
               <label
                 for="businessName"
                 class="font-family-name:--font-ui text-[0.72rem] font-medium uppercase tracking-[0.06em] text-(--clr-ink)/50"
-                >Tu cafeteria</label
+                >Tu negocio</label
               >
               <input
                 type="text"
@@ -72,17 +75,21 @@ const plan = getPlanMeta(planParam)
                 name="businessName"
                 placeholder="Café del Centro"
                 required
-                class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+                data-error-for="company_name"
+                aria-describedby="err-company_name"
+                aria-invalid="false"
+                class="w-full border border-(--clr-ink)/14 bg-(--clr-white)/80 px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) outline-none transition-[border-color,box-shadow] focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10 aria-invalid:border-red-600"
               />
               <span
-                id="err-businessName"
+                id="err-company_name"
+                role="alert"
                 class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
                 >Campo requerido</span
               >
             </div>
           </div>
 
-          <div class="flex flex-col gap-1.5 animate-fade-up animate-delay-200">
+          <div class="flex flex-col gap-1.5">
             <label
               for="email"
               class="font-family-name:--font-ui text-[0.72rem] font-medium uppercase tracking-[0.06em] text-(--clr-ink)/50"
@@ -95,14 +102,19 @@ const plan = getPlanMeta(planParam)
               placeholder="hola@tucafe.com"
               autocomplete="email"
               required
-              class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+              data-error-for="email"
+              aria-describedby="err-email"
+              aria-invalid="false"
+              class="w-full border border-(--clr-ink)/14 bg-(--clr-white)/80 px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) outline-none transition-[border-color,box-shadow] focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10 aria-invalid:border-red-600"
             />
-            <span id="err-email" class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
-              >Email inválido</span
+            <span
+              id="err-email"
+              role="alert"
+              class="hidden text-[0.65rem] text-red-500 font-medium uppercase">Email inválido</span
             >
           </div>
 
-          <div class="flex flex-col gap-1.5 animate-fade-up animate-delay-300">
+          <div class="flex flex-col gap-1.5">
             <label
               for="password"
               class="font-family-name:--font-ui text-[0.72rem] font-medium uppercase tracking-[0.06em] text-(--clr-ink)/50"
@@ -114,9 +126,15 @@ const plan = getPlanMeta(planParam)
               name="password"
               placeholder="Mínimo 8 caracteres"
               required
-              class="w-full px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) border border-(--clr-ink)/14 bg-(--clr-white)/80 outline-none transition-all focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10"
+              data-error-for="password"
+              aria-describedby="err-password"
+              aria-invalid="false"
+              class="w-full border border-(--clr-ink)/14 bg-(--clr-white)/80 px-4 py-3.5 text-[0.9375rem] font-family-name:--font-body text-(--clr-ink-dark) outline-none transition-[border-color,box-shadow] focus:border-(--clr-accent) focus:ring-2 focus:ring-(--clr-accent)/10 aria-invalid:border-red-600"
             />
-            <span id="err-password" class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
+            <span
+              id="err-password"
+              role="alert"
+              class="hidden text-[0.65rem] text-red-500 font-medium uppercase"
               >Contraseña demasiado corta</span
             >
           </div>
@@ -159,7 +177,7 @@ const plan = getPlanMeta(planParam)
   @keyframes fadeUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(0.5rem);
     }
     to {
       opacity: 1;
@@ -168,17 +186,7 @@ const plan = getPlanMeta(planParam)
   }
 
   .animate-fade-up {
-    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .animate-delay-100 {
-    animation-delay: 100ms;
-  }
-  .animate-delay-200 {
-    animation-delay: 200ms;
-  }
-  .animate-delay-300 {
-    animation-delay: 300ms;
+    animation: fadeUp 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
   }
 </style>
 
@@ -193,7 +201,10 @@ const plan = getPlanMeta(planParam)
 
   const showError = (id: string, show: boolean) => {
     const el = document.getElementById(`err-${id}`)
+    const input = document.querySelector<HTMLInputElement>(`[data-error-for="${id}"]`)
+
     if (el) el.classList.toggle('hidden', !show)
+    input?.setAttribute('aria-invalid', String(show))
   }
 
   const setLoading = (loading: boolean) => {
@@ -219,6 +230,9 @@ const plan = getPlanMeta(planParam)
     e.preventDefault()
 
     document.querySelectorAll('[id^="err-"]').forEach((el) => el.classList.add('hidden'))
+    document.querySelectorAll<HTMLInputElement>('[data-error-for]').forEach((input) => {
+      input.setAttribute('aria-invalid', 'false')
+    })
 
     const globalError = document.getElementById('global-error')
 

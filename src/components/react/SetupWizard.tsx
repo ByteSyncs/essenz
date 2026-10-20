@@ -5,7 +5,6 @@ interface SetupWizardProps {
   userId: string
   organizationId: string
   name: string
-  planType: 'basic' | 'business'
   slug: string
 }
 
@@ -76,19 +75,12 @@ function ColorSwatch({
   )
 }
 
-export default function SetupWizard({
-  userId,
-  organizationId,
-  planType,
-  name,
-  slug,
-}: SetupWizardProps) {
+export default function SetupWizard({ userId, organizationId, name, slug }: SetupWizardProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [tagline, setTagline] = useState('')
   const [theme, setTheme] = useState<'modern' | 'minimalist'>('modern')
-  const [domainType, setDomainType] = useState<'path' | 'subdomain'>('path')
   const [brandColors, setBrandColors] = useState<BrandColors>(PALETTES[0].colors)
   const [selectedPalette, setSelectedPalette] = useState<string>(PALETTES[0].name)
 
@@ -96,8 +88,6 @@ export default function SetupWizard({
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const isBusiness = planType === 'business'
-
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -131,7 +121,7 @@ export default function SetupWizard({
       formData.append('organizationId', organizationId)
       formData.append('tagline', tagline)
       formData.append('theme', theme)
-      formData.append('domainType', domainType)
+      formData.append('domainType', 'path')
       formData.append('brandColors', JSON.stringify(brandColors))
 
       if (logoFile) {
@@ -144,6 +134,11 @@ export default function SetupWizard({
         method: 'POST',
         body: formData,
       })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Error del servidor (${res.status}): ${errorText}`)
+      }
 
       const result = await res.json()
       if (result.success) {
@@ -439,54 +434,16 @@ export default function SetupWizard({
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--clr-accent)/10 text-(--clr-accent) text-sm font-bold">
               5
             </span>
-            Configuración de Dominio
+            Dirección de tu local
           </h2>
-          <div className="space-y-4">
-            <label className="flex gap-4 rounded-3xl border border-black/10 bg-white p-6 cursor-pointer hover:border-(--clr-accent)/50 transition-all">
-              <input
-                type="radio"
-                name="domain"
-                checked={domainType === 'path'}
-                onChange={() => setDomainType('path')}
-                className="mt-1 accent-(--clr-accent)"
-              />
-              <div className="flex-1">
-                <p className="font-medium">Dominio Essenz (Gratis)</p>
-                <p className="text-sm text-(--clr-ink)/60 mt-1">
-                  essenz.bytesyncs.com/
-                  {name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : (slug ?? 'tu-cafe')}
-                </p>
-              </div>
-            </label>
-
-            <div className="relative group">
-              <label
-                className={`flex gap-4 rounded-3xl border p-6 transition-all ${isBusiness ? 'border-black/10 bg-white cursor-pointer hover:border-(--clr-accent)/50' : 'border-gray-200 bg-gray-50'}`}
-              >
-                <input
-                  type="radio"
-                  name="domain"
-                  checked={domainType === 'subdomain'}
-                  onChange={() => isBusiness && setDomainType('subdomain')}
-                  disabled={!isBusiness}
-                  className="mt-1 accent-(--clr-accent)"
-                />
-                <div className="flex-1">
-                  <p className="font-medium">Subdominio personalizado</p>
-                  <p className="text-sm text-(--clr-ink)/60 mt-1">
-                    {name ? name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : (slug ?? 'tu-cafe')}
-                    .bytesyncs.com
-                  </p>
-                </div>
-              </label>
-              {!isBusiness && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-black/60 opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
-                  <span className="bg-(--clr-accent) text-white text-xs font-medium px-4 py-2 rounded-full">
-                    Disponible solo en Plan Business
-                  </span>
-                </div>
-              )}
-            </div>
+          <div className="rounded-3xl border border-black/10 bg-white p-6">
+            <p className="text-sm font-medium text-(--clr-ink-dark)">Tu sitio se publica en</p>
+            <p className="mt-2 break-all font-mono text-sm text-(--clr-accent)">
+              essenz.bytesyncs.com/{slug ?? 'tu-local'}
+            </p>
+            <p className="mt-2 text-sm text-(--clr-ink)/60">
+              La dirección usa el mismo formato en todos los planes.
+            </p>
           </div>
         </div>
       </div>

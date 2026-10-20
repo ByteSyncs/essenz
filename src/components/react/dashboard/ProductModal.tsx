@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { uploadImageFromClient } from '../../../libs/uploadClient'
 
 interface Category {
@@ -15,7 +15,17 @@ interface ProductModalProps {
   onSaveProduct: (productData: any) => Promise<void>
 }
 
-const DEFAULT_CATEGORIES = ['Cafés calientes', 'Cafés fríos', 'Pastelería', 'Bebidas combinadas']
+const DEFAULT_CATEGORIES = [
+  'Cafés calientes',
+  'Cafés fríos',
+  'Pastelería',
+  // Restaurants
+  'Platos principales',
+  'Guarniciones',
+  // Bares
+  'Coctelería',
+  'Tapas y picadas',
+]
 
 export default function ProductModal({
   isOpen,
@@ -25,8 +35,6 @@ export default function ProductModal({
   onSaveProduct,
   slug,
 }: ProductModalProps) {
-  if (!isOpen) return null
-
   const [categoryId, setCategoryId] = useState<string>('')
   const [isCreatingCategory, setIsCreatingCategory] = useState<boolean>(false)
   const [newCategoryTitle, setNewCategoryTitle] = useState<string>('')
@@ -49,6 +57,22 @@ export default function ProductModal({
   const [offerPercent, setOfferPercent] = useState<string>('')
 
   const [loading, setLoading] = useState<boolean>(false)
+
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+
+    if (!dialog) return
+
+    if (isOpen && !dialog.open) {
+      dialog.showModal()
+    }
+
+    if (!isOpen && dialog.open) {
+      dialog.close()
+    }
+  }, [isOpen])
 
   const handleAddNote = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && noteInput.trim()) {
@@ -127,9 +151,19 @@ export default function ProductModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <dialog
+      ref={dialogRef}
+      onCancel={(event) => {
+        event.preventDefault()
+        if (!loading) onClose()
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !loading) onClose()
+      }}
+      className="fixed left-1/2 top-1/2 m-0 w-[calc(100%-2rem)] max-w-2xl max-h-[90vh] -translate-x-1/2 -translate-y-1/2 overflow-visible bg-transparent p-0 text-(--clr-ink) backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+    >
       <div
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-(--clr-bg) text-(--clr-ink) p-8 shadow-2xl border border-(--clr-ink)/10"
+        className="max-h-[90vh] overflow-y-auto border border-(--clr-ink)/10 bg-(--clr-bg) p-5 shadow-2xl sm:p-8"
         style={{ borderRadius: 'var(--radius-card)' }}
       >
         <div className="flex items-center justify-between pb-4 mb-6 border-b border-(--clr-ink)/10">
@@ -166,7 +200,7 @@ export default function ProductModal({
               >
                 <option value="">-- Selecciona una categoría --</option>
                 <option value="NEW" className="font-bold text-(--clr-accent)">
-                  ✨ + Crear Nueva Categoría
+                  + Crear Nueva Categoría
                 </option>
 
                 {categories.length > 0 && (
@@ -276,97 +310,6 @@ export default function ProductModal({
             </div>
           </div>
 
-          <div className="p-4 bg-(--clr-white) border border-(--clr-ink)/5 rounded-xl space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-(--clr-accent-light) border-b border-(--clr-ink)/5 pb-1">
-              Especificaciones de Cafetería (Opcional)
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-xs text-(--clr-ink)/70">Intensidad (1 al 5)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  placeholder="Ej: 3"
-                  className="w-full p-2 bg-(--clr-bg) border border-(--clr-ink)/10 rounded-md focus:outline-none focus:border-(--clr-accent)"
-                  value={intensity}
-                  onChange={(e) =>
-                    setIntensity(e.target.value === '' ? '' : Number(e.target.value))
-                  }
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs text-(--clr-ink)/70">Gramos (Shot/Carga)</label>
-                <input
-                  type="text"
-                  placeholder="Ej: 18g"
-                  className="w-full p-2 bg-(--clr-bg) border border-(--clr-ink)/10 rounded-md focus:outline-none focus:border-(--clr-accent)"
-                  value={grams}
-                  onChange={(e) => setGrams(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs text-(--clr-ink)/70">Amargor</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Medio-Bajo"
-                  className="w-full p-2 bg-(--clr-bg) border border-(--clr-ink)/10 rounded-md focus:outline-none focus:border-(--clr-accent)"
-                  value={bitterness}
-                  onChange={(e) => setBitterness(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs text-(--clr-ink)/70">
-                  Nivel de Azúcar sugerido
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Sin azúcar"
-                  className="w-full p-2 bg-(--clr-bg) border border-(--clr-ink)/10 rounded-md focus:outline-none focus:border-(--clr-accent)"
-                  value={sugar}
-                  onChange={(e) => setSugar(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs text-(--clr-ink)/70">
-                Notas de Cata (Presiona Enter para agregar)
-              </label>
-              <input
-                type="text"
-                placeholder="Ej: Chocolate, Cítrico"
-                className="w-full p-2 bg-(--clr-bg) border border-(--clr-ink)/10 rounded-md focus:outline-none focus:border-(--clr-accent)"
-                value={noteInput}
-                onChange={(e) => setNoteInput(e.target.value)}
-                onKeyDown={handleAddNote}
-              />
-              {notes.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {notes.map((note, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-(--clr-accent)/10 text-(--clr-accent) font-medium text-xs rounded-full"
-                    >
-                      {note}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveNote(index)}
-                        className="hover:text-(--clr-ink-dark) font-bold ml-0.5 cursor-pointer"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-(--clr-white) border border-(--clr-ink)/5 rounded-xl">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -444,6 +387,6 @@ export default function ProductModal({
           </div>
         </form>
       </div>
-    </div>
+    </dialog>
   )
 }

@@ -7,9 +7,10 @@ interface CheckoutProps {
   price: number
   clientName: string
   companyName: string
+  slug: string
 }
 
-export const CheckoutPage = ({ planName, price, clientName, companyName }: CheckoutProps) => {
+export const CheckoutPage = ({ planName, price, clientName, companyName, slug }: CheckoutProps) => {
   const formatted = new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
@@ -32,6 +33,7 @@ export const CheckoutPage = ({ planName, price, clientName, companyName }: Check
         body: JSON.stringify({
           plan_id: planName,
           method: paymentMethod,
+          slug: slug,
         }),
       })
 

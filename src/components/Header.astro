@@ -4,13 +4,17 @@ interface Props {
   logo?: string
   name?: string
   tagline?: string
+  city?: string | null
+  phone?: string | null
+  openingHours?: string | null
 }
 
-const { theme = 'modern', logo, name, tagline } = Astro.props
+const { theme = 'modern', logo, name, tagline, city, phone, openingHours } = Astro.props
 const isMin = theme === 'minimalist'
 
 const pathname = Astro.url.pathname
 const menuUrl = pathname + '/menu'
+const phoneHref = phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : null
 
 const navItems = [
   { label: 'Inicio', href: '#home' },
@@ -33,16 +37,15 @@ const navItems = [
         class="bg-[#2C1E16] text-[#F5EFE6]/70 overflow-hidden transition-all duration-500 h-9"
       >
         <div class="max-w-7xl mx-auto px-8 h-full flex justify-between items-center text-[10px] tracking-[0.25em] uppercase font-bold">
-          <div class="flex gap-8">
-            <span class="flex items-center gap-2">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#C8A882] animate-pulse" />
-              Abierto: 7:00 - 21:00
-            </span>
-            <span class="hidden lg:inline-block">Buenos Aires, AR</span>
+          <div class="flex min-w-0 gap-5">
+            {openingHours && <span class="truncate">{openingHours}</span>}
+            {city && <span class="hidden truncate lg:inline-block">{city}</span>}
           </div>
-          <a href="tel:+541140000000" class="hover:text-white transition-colors no-underline">
-            +54 9 11 1234-5678
-          </a>
+          {phoneHref && (
+            <a href={phoneHref} class="hover:text-white transition-colors no-underline">
+              {phone}
+            </a>
+          )}
         </div>
       </div>
     )
@@ -57,13 +60,13 @@ const navItems = [
             .map(() => (
               <span class="inline-flex items-center gap-6 px-8 text-[10px] tracking-[0.3em] uppercase text-white/50 font-bold shrink-0">
                 <span class="text-[--clr-accent]">+</span>
-                Tueste Propio
+                Sitio de {name}
                 <span class="text-white/20">.</span>
-                Granos de Especialidad
+                Carta digital
                 <span class="text-white/20">.</span>
-                12 Origenes
+                Productos y ofertas
                 <span class="text-white/20">.</span>
-                Abierto 7:00-21:00
+                {city || 'Información del local'}
               </span>
             ))}
         </div>
@@ -347,24 +350,36 @@ const navItems = [
       isMin ? 'border-black/8' : 'border-[#2C1E16]/8',
     ]}
   >
-    <a
-      href="tel:+541140000000"
-      class:list={[
-        'text-[10px] tracking-[0.2em] uppercase no-underline font-bold transition-colors',
-        isMin ? 'text-black/40 hover:text-black' : 'text-[#2C1E16]/40 hover:text-[#2C1E16]',
-      ]}
-    >
-      +54 9 11 1234-5678
-    </a>
-    <span class:list={['w-px h-4', isMin ? 'bg-black/15' : 'bg-[#2C1E16]/15']}></span>
-    <span
-      class:list={[
-        'text-[10px] tracking-[0.2em] uppercase font-bold',
-        isMin ? 'text-black/30' : 'text-[#2C1E16]/30',
-      ]}
-    >
-      7:00 - 21:00
-    </span>
+    {
+      phoneHref && (
+        <a
+          href={phoneHref}
+          class:list={[
+            'text-[10px] tracking-[0.2em] uppercase no-underline font-bold transition-colors',
+            isMin ? 'text-black/40 hover:text-black' : 'text-[#2C1E16]/40 hover:text-[#2C1E16]',
+          ]}
+        >
+          {phone}
+        </a>
+      )
+    }
+    {
+      phoneHref && openingHours && (
+        <span class:list={['w-px h-4', isMin ? 'bg-black/15' : 'bg-[#2C1E16]/15']} />
+      )
+    }
+    {
+      openingHours && (
+        <span
+          class:list={[
+            'text-[10px] tracking-[0.12em] uppercase font-bold',
+            isMin ? 'text-black/30' : 'text-[#2C1E16]/30',
+          ]}
+        >
+          {openingHours}
+        </span>
+      )
+    }
   </div>
 </div>
 

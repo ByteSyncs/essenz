@@ -1,0 +1,115 @@
+---
+import { ESSENZ_URL } from '../../constants/site'
+
+interface Props {
+  theme: 'modern' | 'minimalist'
+  name: string
+}
+
+const { theme, name } = Astro.props
+const isModern = theme === 'modern'
+const points = [
+  'Un sitio propio para presentar tu negocio',
+  'Una carta digital siempre al día',
+  'Un panel para organizar a tu equipo',
+]
+---
+
+<section
+  id="create-yours"
+  aria-labelledby="demo-cta-heading"
+  class:list={[
+    'px-5 py-16 sm:px-10 sm:py-24',
+    isModern ? 'bg-[#2c1e16] text-[#f5efe6]' : 'border-y-2 border-black bg-white text-black',
+  ]}
+>
+  <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end lg:gap-16">
+    <div>
+      <p
+        class:list={[
+          'text-xs font-bold uppercase tracking-[0.18em]',
+          isModern ? 'text-[#d7b98e]' : 'text-black/45',
+        ]}
+      >
+        Hecho con Essenz
+      </p>
+      <h2
+        id="demo-cta-heading"
+        class:list={[
+          'mt-4 max-w-2xl text-balance',
+          isModern
+            ? 'font-(family-name:--font-display) text-4xl leading-[1.05] font-semibold tracking-[-0.02em] sm:text-6xl'
+            : 'text-4xl leading-[0.92] font-black uppercase tracking-[-0.05em] sm:text-6xl',
+        ]}
+      >
+        Tu local puede tener un sitio así.
+      </h2>
+      <p class="mt-5 max-w-lg text-base leading-relaxed opacity-70">
+        {name} es una demo con datos de ejemplo. Con Essenz armás tu propio sitio y tu carta digital,
+        y los mantenés al día desde un panel.
+      </p>
+    </div>
+
+    <div>
+      <ul
+        class:list={[
+          'divide-y border-y text-sm font-medium',
+          isModern ? 'divide-white/15 border-white/15' : 'divide-black/15 border-black',
+        ]}
+      >
+        {
+          points.map((point) => (
+            <li class="flex items-start gap-3 py-4">
+              <span
+                aria-hidden="true"
+                class:list={['font-bold', isModern ? 'text-[#d7b98e]' : 'text-black']}
+              >
+                ✓
+              </span>
+              {point}
+            </li>
+          ))
+        }
+      </ul>
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <a
+          href={ESSENZ_URL}
+          class:list={[
+            'cta-press inline-flex min-h-12 items-center justify-center px-7 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4',
+            isModern
+              ? 'rounded-full bg-[#f5efe6] text-[#2c1e16] hover:bg-white focus-visible:outline-[#d7b98e]'
+              : 'bg-black uppercase tracking-[0.12em] text-white hover:bg-neutral-700 focus-visible:outline-black',
+          ]}
+        >
+          Conocer Essenz
+        </a>
+        <a
+          href={`${ESSENZ_URL}/plans`}
+          class:list={[
+            'cta-press inline-flex min-h-12 items-center justify-center border px-7 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4',
+            isModern
+              ? 'rounded-full border-white/30 hover:border-white focus-visible:outline-[#d7b98e]'
+              : 'border-2 border-black uppercase tracking-[0.12em] hover:bg-black hover:text-white focus-visible:outline-black',
+          ]}
+        >
+          Ver planes y precios
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-press {
+    touch-action: manipulation;
+    transition:
+      transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      background-color 160ms ease,
+      color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .cta-press:active {
+    transform: scale(0.97);
+  }
+</style>

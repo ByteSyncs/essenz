@@ -6,6 +6,9 @@ export const POST: APIRoute = async ({ locals, request }) => {
   let logoFile: File | null = null
 
   try {
+    if (!locals.user) {
+      return Response.json({ success: false, error: 'unauthorized' }, { status: 401 })
+    }
     const formData = await request.formData()
     rawData = Object.fromEntries(formData)
     const logo = formData.get('logoFile') as File | null
@@ -19,13 +22,34 @@ export const POST: APIRoute = async ({ locals, request }) => {
 
   const validation = validateSetup({ ...rawData, logoFile })
   if (!validation.success) {
+    console.error(validation.errors)
     return new Response(JSON.stringify({ success: false, errors: validation.errors }), {
       status: 422,
     })
   }
 
   try {
-    const { userId, organizationId, tagline, theme, domainType, brandColors } = validation.data
+    const { userId, organizationId, tagline, theme, brandColors } = validation.data
+    const user = locals.user
+
+    if (!user || user.id !== userId) {
+      return new Response(JSON.stringify({ success: false, error: 'unauthorized' }), {
+        status: 401,
+      })
+    }
+
+    const { data: profile, error: profileError } = await locals.supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError) throw profileError
+    if (!profile || profile.organization_id !== organizationId) {
+      return new Response(JSON.stringify({ success: false, error: 'forbidden' }), {
+        status: 403,
+      })
+    }
 
     const { data: orgData, error: orgError } = await locals.supabase
       .from('organizations')
@@ -41,10 +65,6 @@ export const POST: APIRoute = async ({ locals, request }) => {
       brand_colors: brandColors,
     }
 
-    if (domainType === 'subdomain' && orgData.slug) {
-      orgPayload.custom_domain = `${orgData.slug}.bytesyncs.com`
-    }
-
     const { error: orgUpdateError } = await locals.supabase
       .from('organizations')
       .update(orgPayload)
@@ -52,12 +72,12 @@ export const POST: APIRoute = async ({ locals, request }) => {
 
     if (orgUpdateError) throw orgUpdateError
 
-    const { error: profileError } = await locals.supabase
+    const { error: updateProfileError } = await locals.supabase
       .from('profiles')
       .update({ is_setup_complete: true })
       .eq('id', userId)
 
-    if (profileError) throw profileError
+    if (updateProfileError) throw updateProfileError
 
     return new Response(JSON.stringify({ success: true, slug: orgData.slug }), { status: 200 })
   } catch (err) {

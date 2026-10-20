@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro'
-import * as Sentry from '@sentry/astro'
 import { validateUpdateMenu } from '../../../../libs/schemas/menu/update'
+import { requireOrganizationOwner } from '../../../../libs/server/requireOrganizationOwner'
+
+const LOGO_CHANGE_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000
 
 export const GET: APIRoute = async ({ locals, params }) => {
   const { slug } = params
@@ -24,6 +26,27 @@ export const GET: APIRoute = async ({ locals, params }) => {
       )
     }
 
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('client_name, role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) throw profileError
+
+    if (!['admin', 'owner'].includes(profile.role)) {
+      return Response.json({
+        success: true,
+        data: {
+          profile,
+          org: null,
+        },
+        meta: {
+          server_time: new Date().toISOString(),
+        },
+      })
+    }
+
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .select('*')
@@ -34,14 +57,6 @@ export const GET: APIRoute = async ({ locals, params }) => {
       return Response.json({ success: false, error: 'organization_not_found' }, { status: 404 })
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('client_name, role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError) throw profileError
-
     return Response.json({
       success: true,
       data: {
@@ -51,7 +66,6 @@ export const GET: APIRoute = async ({ locals, params }) => {
     })
   } catch (err) {
     console.error('[GET] Organizations - ', err)
-    // Sentry.captureException({})
 
     return Response.json(
       {
@@ -69,50 +83,95 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
     return Response.json({ success: false, error: 'slug_not_found' }, { status: 400 })
   }
 
-  const supabase = locals.supabase
-  let body
   try {
-    body = await request.json()
-  } catch (err) {
-    return Response.json(
-      {
-        success: false,
-        error: 'invalid_request_body',
-      },
-      { status: 400 },
-    )
-  }
+    const authorization = await requireOrganizationOwner(locals, slug)
+    if (!authorization.authorized) return authorization.response
 
-  const validation = validateUpdateMenu(body)
-  if (!validation.success) {
-    console.error(validation.errors)
-    return Response.json({ success: false, errors: validation.errors }, { status: 422 })
-  }
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return Response.json(
+        { success: false, error: 'invalid_request_body' },
+        { status: 400, headers: { 'Cache-Control': 'private, no-store' } },
+      )
+    }
 
-  const { name, tagline, logo, logo_updated_at } = validation.data
+    const validation = validateUpdateMenu(body)
+    if (!validation.success) {
+      return Response.json({ success: false, errors: validation.errors }, { status: 422 })
+    }
 
-  try {
-    const { data: updateData, error: updateError } = await supabase
+    const { data: currentOrganization, error: currentOrganizationError } = await locals.supabase
       .from('organizations')
-      .update({
-        name,
-        tagline,
-        logo_url: logo,
-        logo_updated_at,
-      })
-      .eq('slug', slug)
+      .select('id, logo_url, logo_updated_at')
+      .eq('id', authorization.organizationId)
+      .maybeSingle()
+
+    if (currentOrganizationError) throw currentOrganizationError
+    if (!currentOrganization) {
+      return Response.json(
+        { success: false, error: 'organization_not_found' },
+        { status: 404, headers: { 'Cache-Control': 'private, no-store' } },
+      )
+    }
+
+    const changes: Record<string, string | null> = {}
+    if (validation.data.name !== undefined) changes.name = validation.data.name
+    if (validation.data.tagline !== undefined) changes.tagline = validation.data.tagline
+
+    if (
+      validation.data.logo !== undefined &&
+      validation.data.logo !== currentOrganization.logo_url
+    ) {
+      if (currentOrganization.logo_url && currentOrganization.logo_updated_at) {
+        const updatedAt = Date.parse(currentOrganization.logo_updated_at)
+        const allowedAt = updatedAt + LOGO_CHANGE_INTERVAL_MS
+        if (!Number.isFinite(updatedAt) || allowedAt > Date.now()) {
+          const daysLeft = Number.isFinite(updatedAt)
+            ? Math.ceil((allowedAt - Date.now()) / (24 * 60 * 60 * 1000))
+            : 3
+          return Response.json(
+            {
+              success: false,
+              error: 'logo_change_unavailable',
+              days_left: daysLeft,
+            },
+            { status: 429, headers: { 'Cache-Control': 'private, no-store' } },
+          )
+        }
+      }
+
+      changes.logo_url = validation.data.logo
+      changes.logo_updated_at = new Date().toISOString()
+    }
+
+    if (!Object.keys(changes).length) {
+      return Response.json(
+        { success: true, data: currentOrganization },
+        { headers: { 'Cache-Control': 'private, no-store' } },
+      )
+    }
+
+    const { data: updateData, error: updateError } = await locals.supabase
+      .from('organizations')
+      .update(changes)
+      .eq('id', authorization.organizationId)
       .select()
       .single()
 
     if (updateError) throw updateError
 
-    return Response.json({
-      success: true,
-      data: updateData,
-      meta: {
-        server_time: new Date().toISOString(),
+    return Response.json(
+      {
+        success: true,
+        data: updateData,
+        meta: {
+          server_time: new Date().toISOString(),
+        },
       },
-    })
+      { headers: { 'Cache-Control': 'private, no-store' } },
+    )
   } catch (err) {
     console.error(err)
     return Response.json(

@@ -3,10 +3,10 @@ import * as Sentry from '@sentry/astro'
 import { validateRegister } from '../../../libs/schemas/auth/signUp'
 import { sendMail } from '../../../libs/resend'
 import supabaseAdmin from '../../../libs/supabaseAdmin'
+import { generateUniqueSlug } from '../../../libs/reservedSlug'
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   let body
-
   try {
     body = await request.json()
   } catch (err) {
@@ -20,7 +20,6 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const validation = validateRegister(body)
-
   if (!validation.success) {
     console.error(validation.errors)
     return new Response(
@@ -35,8 +34,21 @@ export const POST: APIRoute = async ({ request }) => {
   const userData = validation.data
   let createdAuthUserId: string | null = null
   let createdOrganizationId: string | null = null
+  let createdAccountId: string | null = null
 
   try {
+    const { data: existingOrg } = await supabaseAdmin
+      .from('organizations')
+      .select('id')
+      .eq('name', userData.company_name)
+      .maybeSingle()
+
+    if (existingOrg) {
+      return new Response(JSON.stringify({ success: false, error: 'company_name_taken' }), {
+        status: 422,
+      })
+    }
+
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: userData.email,
       password: userData.password,
@@ -74,23 +86,55 @@ export const POST: APIRoute = async ({ request }) => {
 
     createdAuthUserId = authData.user.id
 
-    const slug = userData.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-
-    const { data: orgData, error: orgError } = await supabaseAdmin
-      .from('organizations')
-      .upsert({
-        name: userData.company_name,
-        slug: slug,
+    const { data: accountData, error: accountError } = await supabaseAdmin
+      .from('accounts')
+      .insert({
+        owner_id: createdAuthUserId,
+        max_branches: 1,
       })
       .select('id')
       .single()
 
-    if (orgError) throw orgError
+    if (accountError) throw accountError
+
+    createdAccountId = accountData.id
+
+    let orgData: { id: string } | null = null
+
+    for (let attempt = 0; attempt < 3 && !orgData; attempt++) {
+      const slug = await generateUniqueSlug(userData.company_name, async (candidate) => {
+        const { data } = await supabaseAdmin
+          .from('organizations')
+          .select('id')
+          .eq('slug', candidate)
+          .maybeSingle()
+        return Boolean(data)
+      })
+
+      const { data, error } = await supabaseAdmin
+        .from('organizations')
+        .insert({
+          name: userData.company_name,
+          slug,
+          account_id: createdAccountId,
+        })
+        .select('id')
+        .single()
+
+      if (!error) {
+        orgData = data
+        break
+      }
+      if (error.code !== '23505') throw error
+    }
+
+    if (!orgData) throw new Error('failed_to_allocate_slug')
     createdOrganizationId = orgData.id
 
     const { error: profileError } = await supabaseAdmin.from('profiles').insert({
       id: createdAuthUserId,
       organization_id: orgData.id,
+      account_id: createdAccountId,
       client_name: userData.client_name,
       role: 'admin',
       is_setup_complete: false,
@@ -108,13 +152,32 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const otpCode = otpData.properties.email_otp
-
     if (!otpCode) throw new Error('unable_to_extract_numeric_otp')
 
     await sendMail({
       email: userData.email,
       code: otpCode,
       plan_id: userData.plan_id,
+    })
+
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+    const { data: sessionEmail, error: sessionEmailError } = await supabaseAdmin
+      .from('email_verification_sessions')
+      .insert({
+        email: userData.email,
+        expires_at: expiresAt,
+      })
+      .select()
+      .single()
+
+    if (sessionEmailError) throw sessionEmailError
+
+    cookies.set('waiting_verify_email', sessionEmail.id, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 15,
     })
 
     return new Response(
@@ -126,40 +189,42 @@ export const POST: APIRoute = async ({ request }) => {
             email: authData.user.email,
           },
         },
+        meta: {
+          server_time: new Date().toISOString(),
+        },
       }),
       { status: 201 },
     )
   } catch (err) {
     console.error('REGISTER ERROR, STARTING ROLLBACK:', err)
 
-    if (createdOrganizationId) {
+    if (createdAccountId) {
       try {
-        const { error: deleteOrgError } = await supabaseAdmin
-          .from('organizations')
-          .delete()
-          .eq('id', createdOrganizationId)
+        const { error } = await supabaseAdmin.from('accounts').delete().eq('id', createdAccountId)
 
-        if (deleteOrgError) throw deleteOrgError
-        console.warn(`Rollback: organization ${createdOrganizationId} eliminated`)
-      } catch (rollbackOrgErr) {
-        console.error('CRITICAL: rollback failed for organization:', rollbackOrgErr)
-        Sentry.captureException(rollbackOrgErr, {
-          tags: { mechanism: 'register_rollback_org_failed' },
+        if (error) throw error
+      } catch (rollbackErr) {
+        console.error('CRITICAL: rollback failed for account:', rollbackErr)
+        Sentry.captureException(rollbackErr, {
+          tags: { mechanism: 'register_rollback_account_failed' },
         })
       }
     }
 
     if (createdAuthUserId) {
       try {
-        await supabaseAdmin.auth.admin.deleteUser(createdAuthUserId)
-        console.warn(`Rollback: user from auth: ${createdAuthUserId} eliminated`)
+        const { error } = await supabaseAdmin.auth.admin.deleteUser(createdAuthUserId)
+
+        if (error) throw error
       } catch (rollbackErr) {
-        console.error('CRITICAL: rollback failed from user:', rollbackErr)
-        Sentry.captureException(rollbackErr, { tags: { mechanism: 'register_rollback_failed' } })
+        console.error('CRITICAL: rollback failed for auth user:', rollbackErr)
+        Sentry.captureException(rollbackErr, {
+          tags: { mechanism: 'register_rollback_auth_failed' },
+        })
       }
     }
 
-    Sentry.captureException(err, { tags: { mechanism: 'register' } })
+    // Sentry.captureException(err, { tags: { mechanism: 'register' } })
 
     return new Response(
       JSON.stringify({

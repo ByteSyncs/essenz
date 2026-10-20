@@ -25,4 +25,7 @@ export default defineConfig({
     }),
   ],
   adapter: process.env.NODE_ENV === 'development' ? node({ mode: 'standalone' }) : cloudflare(),
+  security: {
+    checkOrigin: false,
+  },
 })

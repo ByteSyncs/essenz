@@ -24,3 +24,5 @@ pnpm-debug.log*
 .idea/
 
 beforeDeploy.md
+
+.impeccable/config.local.json

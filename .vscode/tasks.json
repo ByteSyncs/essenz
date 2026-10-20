@@ -1,0 +1,118 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Temporary Essenz Preview Server",
+			"type": "shell",
+			"command": "env",
+			"args": [
+				"NODE_ENV=development",
+				"npm",
+				"run",
+				"dev",
+				"--",
+				"--host",
+				"0.0.0.0",
+				"--port",
+				"4322"
+			],
+			"isBackground": true,
+			"problemMatcher": [
+				"$astro"
+			]
+		},
+		{
+			"label": "Temporary Astro Process Check",
+			"type": "shell",
+			"command": "ps",
+			"args": [
+				"-p",
+				"26620",
+				"-o",
+				"pid=,lstart=,args="
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Temporary Astro Process Check Full",
+			"type": "shell",
+			"command": "ps",
+			"args": [
+				"-ww",
+				"-p",
+				"26620",
+				"-o",
+				"pid=,lstart=,command="
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Temporary Stop Essenz Dev Server",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"node_modules/.bin/astro",
+				"dev",
+				"stop"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Essenz Local Preview",
+			"type": "shell",
+			"command": "env",
+			"args": [
+				"NODE_ENV=development",
+				"npm",
+				"run",
+				"dev",
+				"--",
+				"--host",
+				"0.0.0.0",
+				"--port",
+				"4321"
+			],
+			"isBackground": true,
+			"problemMatcher": [
+				"$astro"
+			]
+		},
+		{
+			"label": "Temporary Read Astro Preview Logs",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"node_modules/.bin/astro",
+				"dev",
+				"logs"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Temporary Stop Preview Server",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"node_modules/.bin/astro",
+				"dev",
+				"stop"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Start Astro Background Preview",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"node_modules/.bin/astro",
+				"dev",
+				"--background",
+				"--host",
+				"0.0.0.0",
+				"--port",
+				"4321"
+			],
+			"isBackground": false
+		}
+	]
+}

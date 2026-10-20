@@ -10,7 +10,7 @@ const setupSchema = z.object({
   organizationId: z.string().min(1),
   tagline: z.string().min(3).max(40),
   theme: z.enum(['modern', 'minimalist']),
-  domainType: z.enum(['path', 'subdomain']),
+  domainType: z.literal('path'),
   logoFile: z.instanceof(File).nullable().optional(),
   brandColors: z.string().transform((val, ctx) => {
     try {
