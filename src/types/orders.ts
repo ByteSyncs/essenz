@@ -16,5 +16,8 @@ export interface Order {
   created_at: string
   total_price: number
   payments: { method: string; amount: number }[]
+  tip_amount?: number
+  tip_payment_method?: string | null
+  tip_included_in_payments?: boolean
   items: OrderItem[]
 }

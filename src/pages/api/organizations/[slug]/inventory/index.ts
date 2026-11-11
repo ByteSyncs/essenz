@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro'
+import { requireBranchStaff } from '../../../../../libs/server/branchStaff'
 import { validateNewItemInventory } from '../../../../../libs/schemas/inventory/new'
 
 export const GET: APIRoute = async ({ locals, params, url }) => {
@@ -13,17 +14,11 @@ export const GET: APIRoute = async ({ locals, params, url }) => {
   const from = (page - 1) * perPage
   const to = from + perPage - 1
 
-  const supabase = locals.supabase
   try {
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .single()
-
-    if (orgError || !org) {
-      return Response.json({ success: false, error: 'organization_not_found' }, { status: 404 })
-    }
+    const authorization = await requireBranchStaff(locals, slug)
+    if (!authorization.authorized) return authorization.response
+    const org = { id: authorization.organizationId }
+    const supabase = authorization.db
 
     const {
       data: invData,
@@ -72,7 +67,6 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
     return Response.json({ success: false, error: 'slug_not_found' }, { status: 400 })
   }
 
-  const supabase = locals.supabase
   let body
   try {
     body = await request.json()
@@ -86,21 +80,10 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
   }
 
   try {
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .single()
-
-    if (orgError || !org) {
-      return Response.json(
-        {
-          success: false,
-          error: 'organization_not_found',
-        },
-        { status: 404 },
-      )
-    }
+    const authorization = await requireBranchStaff(locals, slug)
+    if (!authorization.authorized) return authorization.response
+    const org = { id: authorization.organizationId }
+    const supabase = authorization.db
 
     const { data: newItem, error: insertError } = await supabase
       .from('inventory_items')

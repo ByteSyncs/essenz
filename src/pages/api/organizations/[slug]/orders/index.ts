@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro'
 import * as Sentry from '@sentry/astro'
 import supabaseAdmin from '../../../../../libs/supabaseAdmin'
 
-const PAYMENT_METHODS = new Set(['cash', 'debit', 'credit', 'virtual'])
+const PAYMENT_METHODS = new Set(['cash', 'debit', 'credit', 'mercadopago', 'virtual'])
 const DISCOUNT_REASONS = new Set(['clients', 'employees', 'others'])
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_ITEMS = 50
@@ -10,6 +10,30 @@ const MAX_QTY = 99
 const MAX_AMOUNT = 10_000_000
 
 const round2 = (value: number) => Math.round(value * 100) / 100
+
+const ORGANIZATION_TTL_MS = 60_000
+const organizationCache = new Map<string, { id: string; expiresAt: number }>()
+
+async function resolveOrganizationId(slug: string): Promise<string | null> {
+  const cached = organizationCache.get(slug)
+  if (cached && cached.expiresAt > Date.now()) return cached.id
+
+  const { data, error } = await supabaseAdmin
+    .from('organizations')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) {
+    organizationCache.delete(slug)
+    return null
+  }
+
+  if (organizationCache.size >= 500) organizationCache.clear()
+  organizationCache.set(slug, { id: data.id, expiresAt: Date.now() + ORGANIZATION_TTL_MS })
+  return data.id
+}
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store' } })
@@ -55,6 +79,9 @@ export const POST: APIRoute = async ({ params, request }) => {
     return json({ success: false, error: 'invalid_request_body' }, 400)
   }
 
+  const clientId =
+    typeof body?.id === 'string' && UUID_PATTERN.test(body.id) ? body.id.toLowerCase() : null
+
   const customerName = typeof body?.customer_name === 'string' ? body.customer_name.trim() : ''
   if (customerName.length < 1 || customerName.length > 80) {
     return json({ success: false, error: 'invalid_customer_name' }, 422)
@@ -81,19 +108,15 @@ export const POST: APIRoute = async ({ params, request }) => {
   }
 
   try {
-    const { data: organization } = await supabaseAdmin
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .maybeSingle()
+    const organizationId = await resolveOrganizationId(slug)
 
-    if (!organization) return json({ success: false, error: 'not_found' }, 404)
+    if (!organizationId) return json({ success: false, error: 'not_found' }, 404)
 
     const ids = [...quantities.keys()]
     const { data: products, error: productsError } = await supabaseAdmin
       .from('products')
       .select('id, name, price, in_offer, offer_percent')
-      .eq('organization_id', organization.id)
+      .eq('organization_id', organizationId)
       .eq('is_active', true)
       .in('id', ids)
 
@@ -141,7 +164,11 @@ export const POST: APIRoute = async ({ params, request }) => {
     const tip = toMoney(body?.tip_amount ?? 0)
     if (tip === null) return json({ success: false, error: 'invalid_tip' }, 422)
 
-    const charged = round2(total + tip)
+    const rawTipPaymentMethod = body?.tip_payment_method ?? 'cash'
+    if (!PAYMENT_METHODS.has(rawTipPaymentMethod)) {
+      return json({ success: false, error: 'invalid_tip_payment_method' }, 422)
+    }
+    const tipPaymentMethod = rawTipPaymentMethod
 
     const rawPayments = Array.isArray(body?.payments) ? body.payments : []
     let payments: { method: string; amount: number }[] = []
@@ -164,7 +191,7 @@ export const POST: APIRoute = async ({ params, request }) => {
         return json({ success: false, error: 'invalid_payments' }, 422)
       }
       const paid = round2(payments[0].amount + payments[1].amount)
-      if (Math.abs(paid - charged) > 0.01) {
+      if (Math.abs(paid - total) > 0.01) {
         return json({ success: false, error: 'payments_mismatch' }, 422)
       }
     } else {
@@ -174,8 +201,11 @@ export const POST: APIRoute = async ({ params, request }) => {
     let changeReturned: number | null = null
     const cashPayment = payments.find((payment) => payment.method === 'cash')
 
-    if (cashPayment) {
-      const cashTarget = payments.length === 1 ? charged : cashPayment.amount
+    const cashTarget =
+      (cashPayment ? (payments.length === 1 ? total : cashPayment.amount) : 0) +
+      (tipPaymentMethod === 'cash' ? tip : 0)
+
+    if (cashTarget > 0) {
       const rawGiven = body?.cash_given
       const hasGiven = rawGiven !== undefined && rawGiven !== null && rawGiven !== ''
       const given = hasGiven ? toMoney(rawGiven) : null
@@ -192,6 +222,7 @@ export const POST: APIRoute = async ({ params, request }) => {
     const { data: order, error: insertError } = await supabaseAdmin
       .from('orders')
       .insert({
+        ...(clientId ? { id: clientId } : {}),
         org_slug: slug,
         customer_name: customerName,
         table_number: tableNumber,
@@ -202,15 +233,35 @@ export const POST: APIRoute = async ({ params, request }) => {
         discount_amount: discountAmount,
         discount_reason: discountReason,
         tip_amount: tip,
+        tip_payment_method: tipPaymentMethod,
+        tip_included_in_payments: false,
         change_returned: changeReturned,
       })
       .select()
       .single()
 
-    if (insertError) throw insertError
+    if (insertError) {
+      if (clientId && insertError.code === '23505') {
+        const { data: existing, error: existingError } = await supabaseAdmin
+          .from('orders')
+          .select('*')
+          .eq('id', clientId)
+          .eq('org_slug', slug)
+          .maybeSingle()
+
+        if (existingError) throw existingError
+        if (existing) return json({ success: true, data: existing }, 200)
+        return json({ success: false, error: 'order_conflict' }, 409)
+      }
+      throw insertError
+    }
 
     return json({ success: true, data: order }, 201)
   } catch (err) {
+    const message = err && typeof err === 'object' && 'message' in err ? String(err.message) : ''
+    if (message.includes('cash_register_closed')) {
+      return json({ success: false, error: 'cash_register_closed' }, 409)
+    }
     Sentry.captureException(err, { tags: { mechanism: 'create_order' } })
     return json({ success: false, error: 'internal_server_error' }, 500)
   }

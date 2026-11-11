@@ -5,6 +5,28 @@ import { useReactToPrint } from 'react-to-print'
 import { Ticket } from '../Ticket'
 import { KitchenTicket } from '../KitchenTicket'
 import type { Order, OrderItem, OrderStatus } from '../../../../types/orders'
+import {
+  MAX_CUSTOMER_NAME,
+  MAX_ITEMS,
+  MAX_QTY,
+  MAX_TABLE_NUMBER,
+  buildOptimisticOrder,
+  buildPayload,
+  newOrderId,
+  validateDraft,
+  type DraftInput,
+} from '../../../../libs/orders/draft'
+import { saveOrder } from '../../../../libs/orders/saveOrder'
+import {
+  commandsLabel,
+  parseShiftResponse,
+  splitByShift,
+  type ShiftState,
+} from '../../../../libs/orders/shift'
+
+export type { Order, OrderItem, OrderStatus }
+
+type LocalOrder = Order & { sync?: 'saving' | 'failed'; syncError?: string }
 
 const DISCOUNT_TYPES = {
   Clientes: 'clients',
@@ -16,6 +38,7 @@ const PAYMENT_METHODS = {
   Efectivo: 'cash',
   Débito: 'debit',
   Crédito: 'credit',
+  'Mercado Pago': 'mercadopago',
   Virtual: 'virtual',
 } as const
 
@@ -23,17 +46,9 @@ const METHOD_LABELS: Record<string, string> = {
   cash: 'Efectivo',
   debit: 'Débito',
   credit: 'Crédito',
+  mercadopago: 'Mercado Pago',
+  mp: 'Mercado Pago',
   virtual: 'Virtual',
-}
-
-const ORDER_ERRORS: Record<string, string> = {
-  payments_mismatch: 'Los montos de pago no suman el total más la propina.',
-  invalid_payments: 'Revisá los métodos de pago. No podés repetir el mismo método.',
-  cash_insufficient: 'El efectivo recibido no alcanza para cubrir el pago.',
-  invalid_items: 'Hay productos que ya no están disponibles. Quitalos e intentá de nuevo.',
-  invalid_discount: 'El descuento no es válido.',
-  owner_access_required: 'Tu usuario no tiene permiso para esta acción.',
-  subscription_required: 'La suscripción del local no está activa.',
 }
 
 function getUnitPrice(product: {
@@ -59,11 +74,14 @@ function getMinutesElapsed(dateStr: string): number {
 }
 
 export default function OrdersView({ slug }: { slug: string }) {
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<LocalOrder[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [shift, setShift] = useState<ShiftState | null>(null)
+  const [confirmShift, setConfirmShift] = useState(false)
+  const [isChangingShift, setIsChangingShift] = useState(false)
+  const [draftId, setDraftId] = useState(newOrderId)
   const [error, setError] = useState<string | null>(null)
 
   const [isOpenNewOrder, setIsOpenNewOrder] = useState(false)
@@ -80,6 +98,7 @@ export default function OrdersView({ slug }: { slug: string }) {
 
   const [cashGiven, setCashGiven] = useState('')
   const [tipAmount, setTipAmount] = useState('')
+  const [tipPaymentMethod, setTipPaymentMethod] = useState('cash')
 
   const [showDiscount, setShowDiscount] = useState(false)
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage')
@@ -87,6 +106,11 @@ export default function OrdersView({ slug }: { slug: string }) {
   const [discountValue, setDiscountValue] = useState('')
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const pendingPayloads = useRef(new Map<string, unknown>())
+  const localIds = useRef(new Set<string>())
+  const shiftVersion = useRef(0)
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const refreshShiftRef = useRef<() => void>(() => undefined)
   const kitchenTicketRef = useRef<HTMLDivElement>(null)
   const invoiceTicketRef = useRef<HTMLDivElement>(null)
 
@@ -103,8 +127,10 @@ export default function OrdersView({ slug }: { slug: string }) {
     setSplitAmount2('')
     setCashGiven('')
     setTipAmount('')
+    setTipPaymentMethod('cash')
     setIsOpenNewOrder(false)
     setSelectedOrder(null)
+    setDraftId(newOrderId())
   }
 
   const handlePrintKitchen = useReactToPrint({
@@ -135,7 +161,8 @@ export default function OrdersView({ slug }: { slug: string }) {
   const isSplit = paymentMethod2 !== null
   const isCash1 = paymentMethod === 'cash'
   const isCash2 = paymentMethod2 === 'cash'
-  const hasCash = isCash1 || isCash2
+  const hasCash =
+    isCash1 || isCash2 || (tipPaymentMethod === 'cash' && (parseFloat(tipAmount) || 0) > 0)
 
   const handleSplit1Change = (val: string) => {
     setSplitAmount1(val)
@@ -145,31 +172,134 @@ export default function OrdersView({ slug }: { slug: string }) {
     setSplitAmount2(val)
   }
 
-  const cashTargetAmount = isSplit
-    ? isCash1
-      ? parseFloat(splitAmount1) || 0
-      : isCash2
-        ? parseFloat(splitAmount2) || 0
-        : 0
-    : finalTotalWithTip
+  const cashTargetAmount =
+    (isSplit
+      ? isCash1
+        ? parseFloat(splitAmount1) || 0
+        : isCash2
+          ? parseFloat(splitAmount2) || 0
+          : 0
+      : isCash1
+        ? total
+        : 0) + (tipPaymentMethod === 'cash' ? parseFloat(tipAmount) || 0 : 0)
+  const cashIsRequired =
+    hasCash || (tipPaymentMethod === 'cash' && (parseFloat(tipAmount) || 0) > 0)
 
   const cashGivenNum = parseFloat(cashGiven) || 0
   const changeAmount = cashGiven ? Math.max(0, cashGivenNum - cashTargetAmount) : 0
   const missingAmount = cashGiven ? Math.max(0, cashTargetAmount - cashGivenNum) : 0
   const isPayingEnough = !cashGiven || cashGivenNum >= cashTargetAmount
 
-  const splitDiff =
-    (parseFloat(splitAmount1) || 0) + (parseFloat(splitAmount2) || 0) - finalTotalWithTip
-  const splitInvalid = isSplit && (Math.abs(splitDiff) > 0.009 || paymentMethod === paymentMethod2)
+  const draftInput = useMemo<DraftInput>(
+    () => ({
+      customerName,
+      tableNumber,
+      items: cart,
+      discount:
+        numericDiscount > 0
+          ? { type: discountType, value: numericDiscount, reason: discountReason }
+          : null,
+      tipAmount: parseFloat(tipAmount) || 0,
+      tipPaymentMethod,
+      paymentMethod,
+      secondPaymentMethod: paymentMethod2,
+      splitAmounts: [parseFloat(splitAmount1) || 0, parseFloat(splitAmount2) || 0],
+      cashGiven: hasCash && cashGiven ? parseFloat(cashGiven) : null,
+    }),
+    [
+      customerName,
+      tableNumber,
+      cart,
+      numericDiscount,
+      discountType,
+      discountReason,
+      tipAmount,
+      tipPaymentMethod,
+      paymentMethod,
+      paymentMethod2,
+      splitAmount1,
+      splitAmount2,
+      hasCash,
+      cashGiven,
+    ],
+  )
+  const draftError = validateDraft(draftInput)
+  const cashRegisterCanSell =
+    shift?.cashRegisterStatus === 'open' || shift?.cashRegisterStatus === 'unconfigured'
+  const canSubmit = !selectedOrder && draftError === null && cashRegisterCanSell
+
+  const scheduleShiftRefresh = useCallback((delay = 400) => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current)
+    refreshTimer.current = setTimeout(() => refreshShiftRef.current(), delay)
+  }, [])
+
+  const refreshShift = useCallback(async () => {
+    const version = shiftVersion.current
+    try {
+      const res = await fetch(`/api/organizations/${slug}/shift`)
+      if (!res.ok) return
+      const next = parseShiftResponse(await res.json())
+      if (!next) return
+      if (version !== shiftVersion.current) {
+        scheduleShiftRefresh()
+        return
+      }
+      setShift(next)
+    } catch {
+      return
+    }
+  }, [slug, scheduleShiftRefresh])
+
+  useEffect(() => {
+    refreshShiftRef.current = refreshShift
+  }, [refreshShift])
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') scheduleShiftRefresh(0)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      if (refreshTimer.current) clearTimeout(refreshTimer.current)
+    }
+  }, [scheduleShiftRefresh])
+
+  const bumpShift = useCallback((delta: number) => {
+    shiftVersion.current += 1
+    setShift((current) =>
+      current ? { ...current, count: Math.max(0, current.count + delta) } : current,
+    )
+  }, [])
+
+  const markSaved = useCallback(
+    (saved: Order, addIfMissing = false) => {
+      setOrders((prev) => {
+        if (prev.some((o) => o.id === saved.id)) {
+          return prev.map((o) => (o.id === saved.id ? saved : o))
+        }
+        return addIfMissing ? [...prev, saved] : prev
+      })
+      if (localIds.current.delete(saved.id)) bumpShift(1)
+      scheduleShiftRefresh(600)
+    },
+    [bumpShift, scheduleShiftRefresh],
+  )
 
   useEffect(() => {
     async function initDashboard() {
       setIsLoading(true)
       try {
-        const [ordersRes, menuRes] = await Promise.all([
+        const [ordersRes, menuRes, shiftRes] = await Promise.all([
           fetch(`/api/organizations/${slug}/orders`),
           fetch(`/api/organizations/${slug}/menu`),
+          fetch(`/api/organizations/${slug}/shift`).catch(() => null),
         ])
+
+        if (shiftRes?.ok) {
+          const parsed = parseShiftResponse(await shiftRes.json().catch(() => null))
+          if (parsed) setShift(parsed)
+        }
 
         if (ordersRes.ok) {
           const ordersData = await ordersRes.json()
@@ -205,18 +335,20 @@ export default function OrdersView({ slug }: { slug: string }) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            const incoming = payload.new as Order
-            setOrders((prev) =>
-              prev.some((o) => o.id === incoming.id) ? prev : [...prev, incoming],
-            )
+            markSaved(payload.new as Order, true)
           }
           if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as Order
             setOrders((prev) =>
-              prev.map((o) => (o.id === (payload.new as Order).id ? (payload.new as Order) : o)),
+              updated.status === 'delivered' || updated.status === 'cancelled'
+                ? prev.filter((o) => o.id !== updated.id)
+                : prev.map((o) => (o.id === updated.id ? updated : o)),
             )
+            scheduleShiftRefresh()
           }
           if (payload.eventType === 'DELETE') {
             setOrders((prev) => prev.filter((o) => o.id !== (payload.old as Order).id))
+            scheduleShiftRefresh()
           }
         },
       )
@@ -225,7 +357,7 @@ export default function OrdersView({ slug }: { slug: string }) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [slug])
+  }, [slug, markSaved, scheduleShiftRefresh])
 
   const handleStatusChange = useCallback(
     async (id: string, status: OrderStatus) => {
@@ -241,11 +373,12 @@ export default function OrdersView({ slug }: { slug: string }) {
           body: JSON.stringify({ status }),
         })
         if (!res.ok) throw new Error('Failed to update the status on the server')
+        if (status === 'cancelled') scheduleShiftRefresh(300)
       } catch (e) {
         console.error(e)
       }
     },
-    [slug],
+    [slug, scheduleShiftRefresh],
   )
 
   const addToCart = (p: {
@@ -259,8 +392,10 @@ export default function OrdersView({ slug }: { slug: string }) {
     setCart((prev) => {
       const exists = prev.find((item) => item.id === p.id)
       if (exists) {
+        if (exists.qty >= MAX_QTY) return prev
         return prev.map((item) => (item.id === p.id ? { ...item, qty: item.qty + 1 } : item))
       }
+      if (prev.length >= MAX_ITEMS) return prev
       return [...prev, { id: p.id, name: p.name, price, qty: 1 }]
     })
   }
@@ -276,68 +411,218 @@ export default function OrdersView({ slug }: { slug: string }) {
     })
   }
 
-  const submitOrder = async (e?: React.FormEvent | React.MouseEvent) => {
-    e?.preventDefault()
-    if (!customerName || cart.length === 0 || isSubmitting) return
+  const persistOrder = useCallback(
+    async (id: string) => {
+      const payload = pendingPayloads.current.get(id)
+      if (!payload) return
 
-    setIsSubmitting(true)
+      setOrders((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, sync: 'saving', syncError: undefined } : o)),
+      )
+
+      const result = await saveOrder({ slug, payload })
+
+      if (result.ok) {
+        pendingPayloads.current.delete(id)
+        markSaved(result.order)
+        setSelectedOrder((prev) => (prev?.id === id ? result.order : prev))
+        return
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, sync: 'failed', syncError: result.message } : o)),
+      )
+    },
+    [slug, markSaved],
+  )
+
+  const discardOrder = (id: string) => {
+    pendingPayloads.current.delete(id)
+    localIds.current.delete(id)
+    setOrders((prev) => prev.filter((o) => o.id !== id))
+    setSelectedOrder((prev) => (prev?.id === id ? null : prev))
+  }
+
+  const submitOrder = (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault()
+    if (!canSubmit) return
+
+    setError(null)
+
+    const payload = buildPayload(draftId, draftInput)
+    const order = buildOptimisticOrder(draftId, slug, draftInput)
+
+    pendingPayloads.current.set(order.id, payload)
+    localIds.current.add(order.id)
+    setOrders((prev) =>
+      prev.some((o) => o.id === order.id) ? prev : [...prev, { ...order, sync: 'saving' }],
+    )
+    setSelectedOrder(order)
+    setTimeout(() => handlePrintKitchen(), 80)
+    void persistOrder(order.id)
+  }
+
+  const changeShift = async () => {
+    if (isChangingShift) return
+    setIsChangingShift(true)
     setError(null)
 
     try {
-      const payload = {
-        customer_name: customerName,
-        table_number: tableNumber || null,
-        items: cart.map(({ id, qty }) => ({ id, qty })),
-        discount:
-          discountAmount > 0
-            ? { type: discountType, value: numericDiscount, reason: discountReason }
-            : null,
-        tip_amount: parseFloat(tipAmount) || 0,
-        payments: isSplit
-          ? [
-              { method: paymentMethod, amount: parseFloat(splitAmount1) || 0 },
-              { method: paymentMethod2, amount: parseFloat(splitAmount2) || 0 },
-            ]
-          : [{ method: paymentMethod }],
-        cash_given: hasCash && cashGiven ? parseFloat(cashGiven) : null,
-      }
-
-      const res = await fetch(`/api/organizations/${slug}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      const result = await res.json()
-      if (!res.ok) {
-        throw new Error(ORDER_ERRORS[result.error] ?? 'No se pudo procesar la comanda.')
-      }
-
-      setTimeout(() => handlePrintKitchen(), 150)
-      const createdOrder: Order = result.data
-      setOrders((prev) =>
-        prev.some((o) => o.id === createdOrder.id) ? prev : [...prev, createdOrder],
-      )
-      setSelectedOrder(createdOrder)
-    } catch (e: any) {
-      console.error('Error detallado:', e)
-      setError(e.message || 'Ocurrió un error inesperado al guardar el pedido.')
+      const res = await fetch(`/api/organizations/${slug}/shift`, { method: 'POST' })
+      const next = res.ok ? parseShiftResponse(await res.json()) : null
+      if (!next) throw new Error('shift_change_failed')
+      shiftVersion.current += 1
+      setShift(next)
+      setConfirmShift(false)
+    } catch {
+      setError('No se pudo cambiar el turno. Probá de nuevo.')
     } finally {
-      setIsSubmitting(false)
+      setIsChangingShift(false)
     }
   }
 
-  const sortedOrdersFIFO = useMemo(() => {
-    return [...orders].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    )
-  }, [orders])
+  const { previous: previousOrders, current: currentOrders } = useMemo(
+    () => splitByShift(orders, shift?.startedAt ?? null, (order) => order.sync !== undefined),
+    [orders, shift?.startedAt],
+  )
+
+  const unsyncedCount = orders.filter((o) => o.sync !== undefined).length
+  const failedCount = orders.filter((o) => o.sync === 'failed').length
+  const shiftCount = (shift?.count ?? 0) + unsyncedCount
 
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
       .slice(0, 50)
   }, [products, searchQuery])
+
+  const renderOrder = (order: LocalOrder, number: number) => {
+    const minutesElapsed = getMinutesElapsed(order.created_at)
+    const isDelayed = minutesElapsed >= 5
+    const isFailed = order.sync === 'failed'
+    const isSaving = order.sync === 'saving'
+
+    return (
+      <motion.div
+        key={order.id}
+        layout
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className={`bg-white border rounded-sm shadow-xs overflow-hidden flex flex-col md:flex-row md:items-center min-h-18 transition-colors ${
+          isFailed ? 'border-red-300' : isDelayed ? 'border-amber-300' : 'border-gray-200'
+        }`}
+      >
+        <div
+          className={`p-4 flex items-center justify-center shrink-0 min-w-14 text-center font-black text-lg border-b md:border-b-0 md:border-r ${
+            isDelayed
+              ? 'bg-amber-550 text-amber-950 border-amber-300'
+              : 'bg-gray-900 text-white border-gray-200'
+          }`}
+        >
+          {number}
+        </div>
+
+        <div className="p-4 flex flex-col justify-center min-w-36 shrink-0 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
+          <span className="text-xs font-black text-gray-950 truncate uppercase tracking-tight">
+            {order.customer_name}
+          </span>
+          <div className="flex items-center gap-2 mt-0.5">
+            {order.table_number && (
+              <span className="text-[10px] font-black bg-gray-200 text-gray-800 px-1 py-0.2 rounded-xs">
+                M {order.table_number}
+              </span>
+            )}
+            <span
+              className={`text-[10px] font-mono font-bold ${
+                isDelayed ? 'text-amber-700 font-black' : 'text-gray-400'
+              }`}
+            >
+              ⏱ {timeAgo(order.created_at)}
+            </span>
+            {isSaving && <span className="text-[10px] font-bold text-gray-500">Guardando…</span>}
+          </div>
+        </div>
+
+        <div className="flex-1 p-3.5 flex flex-wrap gap-1.5 items-center bg-white min-w-0">
+          {order.items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1.5 rounded-sm border border-gray-200/60 text-xs font-bold shrink-0"
+            >
+              <span className="text-gray-950 font-black text-sm bg-white border px-1.5 py-0.2 shadow-2xs rounded-xs">
+                {item.qty}
+              </span>
+              <span className="text-gray-900 tracking-tight">{item.name}</span>
+            </div>
+          ))}
+          {isFailed && (
+            <p role="alert" className="basis-full text-[11px] font-bold text-red-700">
+              No se guardó: {order.syncError}
+            </p>
+          )}
+        </div>
+
+        <div className="p-3 shrink-0 bg-gray-50/30 border-t md:border-t-0 md:border-l border-gray-100 flex flex-col items-end gap-2">
+          {isFailed ? (
+            <>
+              <button
+                onClick={() => persistOrder(order.id)}
+                className="w-full md:w-auto px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-red-600 hover:bg-red-700 transition-colors rounded-sm"
+              >
+                Reintentar
+              </button>
+              <button
+                onClick={() => discardOrder(order.id)}
+                className="w-full md:w-auto px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-red-600 border border-gray-200 hover:border-red-200 transition-colors rounded-sm"
+              >
+                Descartar
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => handleStatusChange(order.id, 'delivered')}
+                disabled={isSaving}
+                className="w-full md:w-auto px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-gray-900 hover:bg-gray-800 active:bg-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-sm"
+              >
+                ✓ Despachar
+              </button>
+
+              {cancelConfirm === order.id ? (
+                <div className="flex items-center gap-1.5 w-full md:w-auto">
+                  <span className="text-[10px] text-gray-400 font-bold">¿Cancelar?</span>
+                  <button
+                    onClick={() => {
+                      handleStatusChange(order.id, 'cancelled')
+                      setCancelConfirm(null)
+                    }}
+                    className="px-3 py-1.5 bg-red-500 text-white text-[10px] font-black hover:bg-red-600 transition-colors rounded-sm"
+                  >
+                    Sí
+                  </button>
+                  <button
+                    onClick={() => setCancelConfirm(null)}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-600 text-[10px] font-black hover:bg-gray-200 transition-colors rounded-sm"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setCancelConfirm(order.id)}
+                  disabled={isSaving}
+                  className="w-full md:w-auto px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 hover:bg-red-50 border border-gray-200 hover:border-red-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-sm"
+                >
+                  ✕ Cancelar
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </motion.div>
+    )
+  }
 
   if (isLoading && orders.length === 0 && products.length === 0)
     return (
@@ -359,123 +644,128 @@ export default function OrdersView({ slug }: { slug: string }) {
             </h2>
           </div>
 
-          <button
-            onClick={() => setIsOpenNewOrder(true)}
-            className="lg:hidden px-4 py-2 bg-gray-900 text-white text-xs font-black uppercase tracking-wider self-start"
-          >
-            + Tomar Pedido
-          </button>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {shift && (
+              <>
+                <p aria-live="polite" className="text-xs font-bold text-gray-600">
+                  Turno:{' '}
+                  <span className="font-black text-gray-950 tabular-nums">
+                    {commandsLabel(shiftCount)}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setConfirmShift((open) => !open)}
+                  aria-expanded={confirmShift}
+                  className="px-4 py-2 border border-gray-300 text-[10px] font-black uppercase tracking-wider text-gray-800 hover:border-gray-900 active:scale-[0.97] transition-[border-color,transform] duration-150"
+                >
+                  Cambiar turno
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setIsOpenNewOrder(true)}
+              className="lg:hidden px-4 py-2 bg-gray-900 text-white text-xs font-black uppercase tracking-wider"
+            >
+              + Tomar Pedido
+            </button>
+          </div>
         </div>
+
+        {confirmShift && shift && (
+          <div
+            role="group"
+            aria-label="Confirmar cambio de turno"
+            className="mb-4 p-4 bg-white border border-gray-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+          >
+            <p className="text-xs font-bold text-gray-800">
+              Se cierra el turno con {commandsLabel(shiftCount)}.{' '}
+              {orders.length > 0
+                ? `${orders.length === 1 ? 'Sigue 1 comanda' : `Siguen ${orders.length} comandas`} en la fila y pasa${orders.length === 1 ? '' : 'n'} a "Turno anterior".`
+                : 'No quedan comandas pendientes.'}
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                autoFocus
+                onClick={changeShift}
+                disabled={isChangingShift}
+                className="px-4 py-2 bg-gray-900 text-white text-[10px] font-black uppercase tracking-wider hover:bg-black disabled:opacity-50 active:scale-[0.97] transition-transform duration-150"
+              >
+                {isChangingShift ? 'Cambiando...' : 'Cambiar turno'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmShift(false)}
+                disabled={isChangingShift}
+                className="px-4 py-2 border border-gray-300 text-[10px] font-black uppercase tracking-wider text-gray-700 hover:border-gray-900 disabled:opacity-50"
+              >
+                Volver
+              </button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs font-bold border border-red-100">
             ⚠ {error}
           </div>
         )}
+        {shift?.cashRegisterStatus === 'closed' && (
+          <div
+            role="alert"
+            className="mb-4 border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950"
+          >
+            La caja está cerrada. Abrí una nueva desde <strong>Caja</strong> antes de crear pedidos.
+          </div>
+        )}
+        {(!shift || shift.cashRegisterStatus === 'unavailable') && (
+          <div
+            role="alert"
+            className="mb-4 border border-rose-200 bg-rose-50 p-4 text-sm leading-6 text-rose-900"
+          >
+            No pudimos verificar el estado de la caja. Actualizá la pantalla antes de crear pedidos.
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           <AnimatePresence mode="popLayout">
-            {sortedOrdersFIFO.map((order, index) => {
-              const minutesElapsed = getMinutesElapsed(order.created_at)
-              const isDelayed = minutesElapsed >= 5
-
-              return (
-                <motion.div
-                  key={order.id}
-                  layout
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className={`bg-white border rounded-sm shadow-xs overflow-hidden flex flex-col md:flex-row md:items-center min-h-18 transition-colors ${
-                    isDelayed ? 'border-amber-300' : 'border-gray-200'
-                  }`}
-                >
-                  <div
-                    className={`p-4 flex items-center justify-center shrink-0 min-w-14 text-center font-black text-lg border-b md:border-b-0 md:border-r ${
-                      isDelayed
-                        ? 'bg-amber-550 text-amber-950 border-amber-300'
-                        : 'bg-gray-900 text-white border-gray-200'
-                    }`}
-                  >
-                    {index + 1}
-                  </div>
-
-                  <div className="p-4 flex flex-col justify-center min-w-36 shrink-0 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50">
-                    <span className="text-xs font-black text-gray-950 truncate uppercase tracking-tight">
-                      {order.customer_name}
-                    </span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {order.table_number && (
-                        <span className="text-[10px] font-black bg-gray-200 text-gray-800 px-1 py-0.2 rounded-xs">
-                          M {order.table_number}
-                        </span>
-                      )}
-                      <span
-                        className={`text-[10px] font-mono font-bold ${
-                          isDelayed ? 'text-amber-700 font-black' : 'text-gray-400'
-                        }`}
-                      >
-                        ⏱ {timeAgo(order.created_at)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 p-3.5 flex flex-wrap gap-1.5 items-center bg-white min-w-0">
-                    {order.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1.5 rounded-sm border border-gray-200/60 text-xs font-bold shrink-0"
-                      >
-                        <span className="text-gray-950 font-black text-sm bg-white border px-1.5 py-0.2 shadow-2xs rounded-xs">
-                          {item.qty}
-                        </span>
-                        <span className="text-gray-900 tracking-tight">{item.name}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="p-3 shrink-0 bg-gray-50/30 border-t md:border-t-0 md:border-l border-gray-100 flex flex-col items-end gap-2">
-                    <button
-                      onClick={() => handleStatusChange(order.id, 'delivered')}
-                      className="w-full md:w-auto px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-gray-900 hover:bg-gray-800 active:bg-black transition-colors rounded-sm"
-                    >
-                      ✓ Despachar
-                    </button>
-
-                    {cancelConfirm === order.id ? (
-                      <div className="flex items-center gap-1.5 w-full md:w-auto">
-                        <span className="text-[10px] text-gray-400 font-bold">¿Cancelar?</span>
-                        <button
-                          onClick={() => {
-                            handleStatusChange(order.id, 'cancelled')
-                            setCancelConfirm(null)
-                          }}
-                          className="px-3 py-1.5 bg-red-500 text-white text-[10px] font-black hover:bg-red-600 transition-colors rounded-sm"
-                        >
-                          Sí
-                        </button>
-                        <button
-                          onClick={() => setCancelConfirm(null)}
-                          className="px-3 py-1.5 bg-gray-100 text-gray-600 text-[10px] font-black hover:bg-gray-200 transition-colors rounded-sm"
-                        >
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setCancelConfirm(order.id)}
-                        className="w-full md:w-auto px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition-colors rounded-sm"
-                      >
-                        ✕ Cancelar
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              )
-            })}
+            {previousOrders.length > 0 && (
+              <p
+                key="previous-heading"
+                className="text-[10px] font-black uppercase tracking-widest text-gray-500"
+              >
+                Turno anterior ·{' '}
+                {previousOrders.length === 1
+                  ? '1 pendiente'
+                  : `${previousOrders.length} pendientes`}
+              </p>
+            )}
+            {previousOrders.map((order, index) => renderOrder(order, index + 1))}
+            {previousOrders.length > 0 && (
+              <div
+                key="current-divider"
+                role="separator"
+                aria-label="Comienzo del turno actual"
+                className="flex items-center gap-3 py-1"
+              >
+                <span className="h-px flex-1 bg-gray-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">
+                  Turno actual
+                </span>
+                <span className="h-px flex-1 bg-gray-400" />
+              </div>
+            )}
+            {currentOrders.map((order, index) => renderOrder(order, index + 1))}
           </AnimatePresence>
 
-          {sortedOrdersFIFO.length === 0 && (
+          {previousOrders.length > 0 && currentOrders.length === 0 && (
+            <p className="text-center py-6 text-xs font-bold text-gray-500">
+              Todavía no hay comandas en este turno
+            </p>
+          )}
+
+          {orders.length === 0 && (
             <div className="text-center py-20 bg-white border border-gray-200 border-dashed rounded-sm text-xs font-bold text-gray-300 uppercase tracking-widest">
               Sin comandas pendientes en fila
             </div>
@@ -534,11 +824,27 @@ export default function OrdersView({ slug }: { slug: string }) {
           </div>
         </div>
 
+        {failedCount > 0 && (
+          <div role="alert" className="lg:hidden mb-4">
+            <button
+              type="button"
+              onClick={() => setIsOpenNewOrder(false)}
+              className="w-full p-3 text-left bg-red-50 border border-red-200 text-xs font-bold text-red-700"
+            >
+              {failedCount === 1
+                ? 'Una comanda no se guardó'
+                : `${failedCount} comandas no se guardaron`}
+              . Tocá para verla y reintentar.
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 flex flex-col pr-1 space-y-4 shrink-0">
           <div className="space-y-2 shrink-0">
             <input
               type="text"
               placeholder="Nombre cliente"
+              maxLength={MAX_CUSTOMER_NAME}
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               className="w-full text-xs p-3 border border-gray-200 font-bold focus:outline-none focus:border-black rounded-sm"
@@ -546,6 +852,7 @@ export default function OrdersView({ slug }: { slug: string }) {
             <input
               type="text"
               placeholder="Mesa (Opcional)"
+              maxLength={MAX_TABLE_NUMBER}
               value={tableNumber}
               onChange={(e) => setTableNumber(e.target.value)}
               className="w-full text-xs p-3 border border-gray-200 font-bold focus:outline-none focus:border-black rounded-sm"
@@ -701,6 +1008,32 @@ export default function OrdersView({ slug }: { slug: string }) {
                 className="w-full pl-7 pr-2 py-2 text-xs font-bold border border-gray-200 bg-white focus:outline-none focus:border-black rounded-xs"
               />
             </div>
+            {(parseFloat(tipAmount) || 0) > 0 && (
+              <div className="mt-3">
+                <label
+                  htmlFor="tip-payment-method"
+                  className="mb-1.5 block text-[10px] font-bold text-gray-700"
+                >
+                  Medio de pago de la propina
+                </label>
+                <select
+                  id="tip-payment-method"
+                  value={tipPaymentMethod}
+                  onChange={(e) => setTipPaymentMethod(e.target.value)}
+                  className="w-full border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
+                >
+                  {Object.entries(PAYMENT_METHODS).map(([label, method]) => (
+                    <option key={method} value={method}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] leading-4 text-gray-600">
+                  Si no lo cambiás, la propina se registra en efectivo, por separado del pago de la
+                  venta.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-gray-100 pt-3 mb-2">
@@ -795,16 +1128,15 @@ export default function OrdersView({ slug }: { slug: string }) {
             )}
 
             <div className="flex justify-between font-black text-sm mb-4 tracking-tight">
-              <span>TOTAL:</span>
+              <span>TOTAL A COBRAR:</span>
               <span>$ {Math.round(finalTotalWithTip).toLocaleString('es-AR')}</span>
             </div>
 
             <>
               {(() => {
                 const suma = (parseFloat(splitAmount1) || 0) + (parseFloat(splitAmount2) || 0)
-                const diff = suma - finalTotalWithTip
-                const showDiffLabel =
-                  isSplit && finalTotalWithTip > 0 && (splitAmount1 || splitAmount2)
+                const diff = suma - total
+                const showDiffLabel = isSplit && total > 0 && (splitAmount1 || splitAmount2)
 
                 return (
                   <>
@@ -824,7 +1156,7 @@ export default function OrdersView({ slug }: { slug: string }) {
                       <div
                         className={`flex justify-between items-center text-xs font-black ${diff >= 0 ? 'text-emerald-600' : 'text-red-500'}`}
                       >
-                        <span>{diff >= 0 ? 'Cubierto' : 'Falta'}</span>
+                        <span>{diff >= 0 ? 'Total de venta cubierto' : 'Falta para el total'}</span>
                         <span>
                           {diff >= 0
                             ? `+ $${diff.toLocaleString('es-AR')}`
@@ -836,49 +1168,54 @@ export default function OrdersView({ slug }: { slug: string }) {
                     <motion.div
                       initial={false}
                       animate={{
-                        height: isSplit && finalTotalWithTip > 0 ? 'auto' : 0,
-                        opacity: isSplit && finalTotalWithTip > 0 ? 1 : 0,
-                        marginBottom: isSplit && finalTotalWithTip > 0 ? 16 : 0,
+                        height: isSplit && total > 0 ? 'auto' : 0,
+                        opacity: isSplit && total > 0 ? 1 : 0,
+                        marginBottom: isSplit && total > 0 ? 16 : 0,
                       }}
                       transition={{
                         duration: 0.3,
                         ease: [0.4, 0, 0.2, 1],
                       }}
-                      className="flex gap-2 overflow-hidden"
+                      className="flex flex-col gap-2 overflow-hidden"
                     >
-                      <div className="flex-1 bg-gray-50 border border-gray-200 rounded-sm p-2">
-                        <label className="text-[9px] font-black uppercase tracking-wider text-gray-500 mb-1 block">
-                          Monto en {METHOD_LABELS[paymentMethod] ?? paymentMethod}
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">
-                            $
-                          </span>
-                          <input
-                            type="number"
-                            value={splitAmount1}
-                            onChange={(e) => handleSplit1Change(e.target.value)}
-                            placeholder="0"
-                            className="w-full pl-6 pr-2 py-1 text-xs font-black border-b border-transparent focus:border-gray-900 focus:outline-none bg-transparent transition-colors"
-                          />
+                      <p className="text-[11px] leading-4 text-gray-600">
+                        Distribuí el total de la venta; la propina se cobra aparte.
+                      </p>
+                      <div className="flex gap-2">
+                        <div className="min-w-0 flex-1 border border-gray-200 bg-gray-50 p-2">
+                          <label className="mb-1 block text-[9px] font-black uppercase tracking-wider text-gray-600">
+                            Monto en {METHOD_LABELS[paymentMethod] ?? paymentMethod}
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                              $
+                            </span>
+                            <input
+                              type="number"
+                              value={splitAmount1}
+                              onChange={(e) => handleSplit1Change(e.target.value)}
+                              placeholder="0"
+                              className="w-full border-b border-transparent bg-transparent py-1 pl-6 pr-2 text-xs font-black focus:border-gray-900 focus:outline-none"
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex-1 bg-gray-50 border border-gray-200 rounded-sm p-2">
-                        <label className="text-[9px] font-black uppercase tracking-wider text-gray-500 mb-1 block">
-                          Monto en {METHOD_LABELS[paymentMethod2 ?? ''] ?? paymentMethod2}
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">
-                            $
-                          </span>
-                          <input
-                            type="number"
-                            value={splitAmount2}
-                            onChange={(e) => handleSplit2Change(e.target.value)}
-                            placeholder="0"
-                            className="w-full pl-6 pr-2 py-1 text-xs font-black border-b border-transparent focus:border-gray-900 focus:outline-none bg-transparent transition-colors"
-                          />
+                        <div className="min-w-0 flex-1 border border-gray-200 bg-gray-50 p-2">
+                          <label className="mb-1 block text-[9px] font-black uppercase tracking-wider text-gray-600">
+                            Monto en {METHOD_LABELS[paymentMethod2 ?? ''] ?? paymentMethod2}
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                              $
+                            </span>
+                            <input
+                              type="number"
+                              value={splitAmount2}
+                              onChange={(e) => handleSplit2Change(e.target.value)}
+                              placeholder="0"
+                              className="w-full border-b border-transparent bg-transparent py-1 pl-6 pr-2 text-xs font-black focus:border-gray-900 focus:outline-none"
+                            />
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -889,10 +1226,10 @@ export default function OrdersView({ slug }: { slug: string }) {
               <motion.div
                 initial={false}
                 animate={{
-                  height: hasCash && finalTotalWithTip > 0 ? 'auto' : 0,
-                  opacity: hasCash && finalTotalWithTip > 0 ? 1 : 0,
-                  marginTop: hasCash && finalTotalWithTip > 0 ? 16 : 0,
-                  marginBottom: hasCash && finalTotalWithTip > 0 ? 16 : 0,
+                  height: cashIsRequired && cashTargetAmount > 0 ? 'auto' : 0,
+                  opacity: cashIsRequired && cashTargetAmount > 0 ? 1 : 0,
+                  marginTop: cashIsRequired && cashTargetAmount > 0 ? 16 : 0,
+                  marginBottom: cashIsRequired && cashTargetAmount > 0 ? 16 : 0,
                 }}
                 transition={{
                   duration: 0.3,
@@ -904,7 +1241,7 @@ export default function OrdersView({ slug }: { slug: string }) {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1">
                       <label className="text-[9px] font-black uppercase tracking-wider text-gray-400 mb-1.5 block">
-                        Paga {isSplit ? 'la parte en efectivo' : 'el total'} con:
+                        Paga en efectivo:
                       </label>
                       <div className="relative">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">
@@ -948,13 +1285,34 @@ export default function OrdersView({ slug }: { slug: string }) {
               </motion.div>
             </>
 
-            <button
-              onClick={submitOrder}
-              disabled={!customerName || cart.length === 0 || isSubmitting || splitInvalid}
-              className="w-full py-4 bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black disabled:bg-gray-100 disabled:text-gray-300 transition-colors rounded-sm"
-            >
-              {isSubmitting ? 'Creando...' : 'Crear Comanda →'}
-            </button>
+            {selectedOrder ? (
+              <>
+                <p role="status" className="mb-2 text-[11px] font-bold text-emerald-700">
+                  Comanda enviada a cocina. Imprimí la factura o empezá otra.
+                </p>
+                <button
+                  onClick={resetForm}
+                  className="w-full py-4 bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black active:scale-[0.99] transition-[background-color,transform] rounded-sm"
+                >
+                  Nueva comanda →
+                </button>
+              </>
+            ) : (
+              <>
+                {draftError && cart.length > 0 && (
+                  <p role="status" className="mb-2 text-[11px] font-bold text-red-600">
+                    {draftError}
+                  </p>
+                )}
+                <button
+                  onClick={submitOrder}
+                  disabled={!canSubmit}
+                  className="w-full py-4 bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black active:scale-[0.99] disabled:bg-gray-100 disabled:text-gray-300 transition-[background-color,transform] rounded-sm"
+                >
+                  Crear Comanda →
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

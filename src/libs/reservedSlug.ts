@@ -20,6 +20,8 @@ const RESERVED_SLUGS = new Set([
   'app',
   'billing',
   'dashboard',
+  'account',
+  'access',
   'login',
   'register',
   'sign-in',

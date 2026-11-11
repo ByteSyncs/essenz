@@ -58,16 +58,16 @@ function Toggle({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center transition-colors duration-200 ${
-        checked ? 'bg-(--clr-ink)' : 'bg-gray-200'
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) disabled:cursor-not-allowed disabled:opacity-60 ${
+        checked ? 'bg-(--clr-ink)' : 'bg-gray-300'
       }`}
       role="switch"
       aria-label={label}
       aria-checked={checked}
     >
       <span
-        className={`inline-block h-3.5 w-3.5 bg-white shadow-sm transition-transform duration-200 ${
-          checked ? 'translate-x-4' : 'translate-x-0.5'
+        className={`inline-block h-4.5 w-4.5 bg-white shadow-sm transition-transform duration-200 ${
+          checked ? 'translate-x-6' : 'translate-x-0.5'
         }`}
       />
     </button>
@@ -88,13 +88,14 @@ function readSettings(value: Partial<Settings>): Settings {
   }
 }
 
-export default function SettingsView({ slug }: { slug: string }) {
+export default function SettingsView({ slug, isOwner }: { slug: string; isOwner: boolean }) {
   const [settings, setSettings] = useState<Settings>(EMPTY_SETTINGS)
   const [initialSettings, setInitialSettings] = useState<Settings>(EMPTY_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [canEdit, setCanEdit] = useState(isOwner)
 
   const hasChanges = useMemo(
     () => JSON.stringify(settings) !== JSON.stringify(initialSettings),
@@ -111,13 +112,14 @@ export default function SettingsView({ slug }: { slug: string }) {
         if (!response.ok || !result.success || !result.settings) {
           throw new Error(
             response.status === 403
-              ? 'Solo el dueño puede administrar estos ajustes.'
+              ? 'No tenés acceso a esta configuración.'
               : 'No pudimos cargar la configuración.',
           )
         }
         const loaded = readSettings(result.settings)
         setSettings(loaded)
         setInitialSettings(loaded)
+        setCanEdit(result.canEdit === true)
       } catch (loadError) {
         setError((loadError as Error).message)
       } finally {
@@ -128,7 +130,7 @@ export default function SettingsView({ slug }: { slug: string }) {
   }, [slug])
 
   const handleSave = useCallback(async () => {
-    if (!hasChanges) return
+    if (!hasChanges || !canEdit) return
     setIsSaving(true)
     setError(null)
     try {
@@ -156,7 +158,7 @@ export default function SettingsView({ slug }: { slug: string }) {
     } finally {
       setIsSaving(false)
     }
-  }, [slug, settings, hasChanges])
+  }, [slug, settings, hasChanges, canEdit])
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     setSettings((previous) => ({ ...previous, [key]: value }))
@@ -174,13 +176,19 @@ export default function SettingsView({ slug }: { slug: string }) {
   return (
     <div className="max-w-3xl px-6 py-8 md:px-10">
       <div className="mb-8">
-        <p className="mb-1 text-[10px] font-black uppercase tracking-[0.25em] text-(--clr-accent)">
-          Configuración del dueño
+        <h2 className="text-2xl font-bold tracking-tight text-(--clr-ink)">Configuración</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Estos datos aparecen en la página del negocio y son públicos para los clientes.
         </p>
-        <h2 className="text-2xl font-bold tracking-tight text-(--clr-ink)">Tu sitio público</h2>
-        <p className="mt-2 text-sm text-gray-500">
-          Estos datos aparecen en la página de tu negocio y son públicos para tus clientes.
-        </p>
+        {!canEdit && (
+          <p
+            className="mt-4 border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800"
+            role="note"
+          >
+            Solo lectura. El dueño puede habilitar la edición de la configuración desde el panel de
+            la cuenta.
+          </p>
+        )}
       </div>
 
       <AnimatePresence>
@@ -211,16 +219,16 @@ export default function SettingsView({ slug }: { slug: string }) {
         )}
       </AnimatePresence>
 
-      <div className="space-y-8">
+      <fieldset disabled={!canEdit} className="min-w-0 space-y-8 border-0 p-0">
         <section>
-          <h3 className="mb-3 border-b border-gray-100 pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+          <h3 className="mb-3 border-b border-gray-100 pb-2 text-sm font-bold text-gray-800">
             Visibilidad
           </h3>
           <div className="divide-y divide-gray-100">
             <div className="flex items-center justify-between gap-5 py-4">
               <div>
                 <p className="text-sm font-bold text-(--clr-ink)">Carta activa</p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-gray-600">
                   Si la desactivás, tus clientes no podrán abrir la carta.
                 </p>
               </div>
@@ -233,7 +241,7 @@ export default function SettingsView({ slug }: { slug: string }) {
             <div className="flex items-center justify-between gap-5 py-4">
               <div>
                 <p className="text-sm font-bold text-(--clr-ink)">Fotos en la carta</p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-gray-600">
                   Mostrá u ocultá las fotos que subiste para tus productos.
                 </p>
               </div>
@@ -247,14 +255,14 @@ export default function SettingsView({ slug }: { slug: string }) {
         </section>
 
         <section>
-          <h3 className="mb-4 border-b border-gray-100 pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+          <h3 className="mb-4 border-b border-gray-100 pb-2 text-sm font-bold text-gray-800">
             Información del negocio
           </h3>
           <div className="grid gap-4 sm:grid-cols-2">
             {TEXT_FIELDS.map(({ key, label, type = 'text', placeholder }) => (
               <label
                 key={key}
-                className={`block text-[10px] font-bold uppercase tracking-widest text-gray-500 ${
+                className={`block text-sm font-medium text-gray-800 ${
                   key === 'opening_hours' ? 'sm:col-span-2' : ''
                 }`}
               >
@@ -265,7 +273,7 @@ export default function SettingsView({ slug }: { slug: string }) {
                   onChange={(event) => update(key, event.target.value)}
                   placeholder={placeholder}
                   maxLength={key === 'contact_email' ? 254 : key.includes('_url') ? 300 : 160}
-                  className="mt-2 w-full border border-gray-200 bg-white px-3 py-3 text-sm font-normal normal-case tracking-normal text-(--clr-ink) outline-none transition focus:border-(--clr-accent)"
+                  className="mt-2 w-full border border-gray-200 bg-white min-h-11 px-3 py-3 text-base font-normal text-(--clr-ink) outline-none transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--clr-ink) disabled:bg-gray-50 disabled:text-gray-700"
                   autoComplete={type === 'email' ? 'email' : type === 'tel' ? 'tel' : 'off'}
                 />
               </label>
@@ -273,15 +281,17 @@ export default function SettingsView({ slug }: { slug: string }) {
           </div>
         </section>
 
-        <motion.button
-          whileTap={hasChanges && !isSaving ? { scale: 0.98 } : undefined}
-          onClick={handleSave}
-          disabled={!hasChanges || isSaving}
-          className="w-full bg-(--clr-ink) py-3.5 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-black/5 transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          {isSaving ? 'Guardando...' : 'Guardar configuración'}
-        </motion.button>
-      </div>
+        {canEdit && (
+          <motion.button
+            whileTap={hasChanges && !isSaving ? { scale: 0.98 } : undefined}
+            onClick={handleSave}
+            disabled={!hasChanges || isSaving}
+            className="w-full bg-(--clr-ink) py-3.5 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-black/5 transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {isSaving ? 'Guardando...' : 'Guardar configuración'}
+          </motion.button>
+        )}
+      </fieldset>
     </div>
   )
 }

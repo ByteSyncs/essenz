@@ -11,8 +11,13 @@ import {
   Users,
   HelpCircle,
   Loader2,
+  Info,
 } from 'lucide-react'
 import type { Expense } from '../../../../types/expenses'
+
+const CASH_REGISTER_CLOSED_MESSAGE =
+  'No hay una caja abierta. Abrí la caja o desmarcá que el gasto usa efectivo de caja.'
+const EXPENSE_SUBMIT_ERROR = 'No pudimos registrar el gasto. Revisá los datos e intentá nuevamente.'
 
 const CATEGORIES = [
   {
@@ -56,6 +61,7 @@ export default function ExpensesView({ slug }: { slug: string }) {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]['id']>('supplies')
+  const [usesCash, setUsesCash] = useState(true)
 
   useEffect(() => {
     async function fetchExpenses() {
@@ -95,20 +101,35 @@ export default function ExpensesView({ slug }: { slug: string }) {
           description: description.trim(),
           amount: parseFloat(amount),
           category,
+          usesCash,
         }),
       })
 
-      if (!res.ok) throw new Error('Error al guardar el gasto')
       const json = await res.json()
+      if (!res.ok) {
+        if (json.error === 'cash_register_closed') {
+          throw new Error(CASH_REGISTER_CLOSED_MESSAGE)
+        }
+        throw new Error(EXPENSE_SUBMIT_ERROR)
+      }
 
       setExpenses((prev) => [json.data, ...prev])
       setDescription('')
       setAmount('')
       setCategory('supplies')
-      setSuccessMsg('Gasto registrado con éxito')
+      setUsesCash(true)
+      setSuccessMsg(
+        usesCash
+          ? 'Gasto registrado y descontado del efectivo de caja.'
+          : 'Gasto registrado sin modificar el efectivo de caja.',
+      )
       setTimeout(() => setSuccessMsg(null), 3000)
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar el gasto.')
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error && err.message === CASH_REGISTER_CLOSED_MESSAGE
+          ? CASH_REGISTER_CLOSED_MESSAGE
+          : EXPENSE_SUBMIT_ERROR,
+      )
     } finally {
       setSubmitting(false)
     }
@@ -218,6 +239,44 @@ export default function ExpensesView({ slug }: { slug: string }) {
               </div>
             </div>
 
+            <div className="flex items-start gap-3 border-y border-gray-100 py-4">
+              <input
+                id="expense-uses-cash"
+                type="checkbox"
+                checked={usesCash}
+                onChange={(event) => setUsesCash(event.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-(--clr-ink) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink)"
+              />
+              <div className="min-w-0 flex-1">
+                <label
+                  htmlFor="expense-uses-cash"
+                  className="cursor-pointer text-sm font-medium text-gray-900"
+                >
+                  ¿Se usa dinero de la caja?
+                </label>
+                <p className="mt-1 text-xs leading-5 text-gray-600">
+                  Sí, descontar del efectivo esperado al cierre.
+                </p>
+              </div>
+              <span className="group relative inline-flex shrink-0">
+                <button
+                  type="button"
+                  aria-label="Más información sobre gastos de caja"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink)"
+                >
+                  <Info size={16} aria-hidden="true" />
+                </button>
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full right-0 z-10 mb-2 w-64 border border-gray-200 bg-white p-3 text-xs leading-5 text-gray-700 opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                >
+                  Esta opción se usa para calcular el efectivo que debería quedar al cierre. Si se
+                  pagó por transferencia o tarjeta, desmarcala: el gasto se registra, pero no resta
+                  efectivo.
+                </span>
+              </span>
+            </div>
+
             <button
               type="submit"
               disabled={submitting}
@@ -283,6 +342,10 @@ export default function ExpensesView({ slug }: { slug: string }) {
                           <span className="text-[10px] text-gray-300">•</span>
                           <span className="text-[10px] text-gray-400 uppercase font-bold">
                             {catDetails.label}
+                          </span>
+                          <span className="text-[10px] text-gray-300">•</span>
+                          <span className="text-[10px] text-gray-500">
+                            {exp.uses_cash ? 'Pagado desde caja' : 'No afecta caja'}
                           </span>
                         </div>
                       </div>

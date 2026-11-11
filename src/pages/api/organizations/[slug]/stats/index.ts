@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro'
-import { requireOrganizationOwner } from '../../../../../libs/server/requireOrganizationOwner'
+import { requireBranchStaff } from '../../../../../libs/server/branchStaff'
 import supabaseAdmin from '../../../../../libs/supabaseAdmin'
 
 const VALID_RANGES = ['today', '7d', '30d']
@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ locals, params, url }) => {
   const safeRange = VALID_RANGES.includes(range) ? range : '7d'
 
   try {
-    const authorization = await requireOrganizationOwner(locals, slug)
+    const authorization = await requireBranchStaff(locals, slug)
     if (!authorization.authorized) return authorization.response
 
     const { data, error } = await supabaseAdmin.rpc('get_organization_stats', {
@@ -26,6 +26,23 @@ export const GET: APIRoute = async ({ locals, params, url }) => {
 
     if (data?.error) {
       return Response.json({ success: false, error: data.error }, { status: 404 })
+    }
+
+    if (data && Array.isArray(data.paymentMethods)) {
+      data.paymentMethods = data.paymentMethods.map(
+        (payment: { name?: string; color?: string }) => {
+          const method = payment.name?.toLowerCase().replaceAll(' ', '_')
+          if (
+            method === 'mercadopago' ||
+            method === 'mp' ||
+            method === 'mercado_pago' ||
+            method === 'mercado_pago_(mp)'
+          ) {
+            return { ...payment, name: 'Mercado Pago', color: '#009ee3' }
+          }
+          return payment
+        },
+      )
     }
 
     return Response.json(

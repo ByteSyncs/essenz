@@ -8,12 +8,27 @@ interface Props {
 }
 
 const formatMethod = (m: string) =>
-  ({ cash: 'Efectivo', debit: 'Débito', credit: 'Crédito', virtual: 'Virtual' })[m] ?? m
+  ({
+    cash: 'Efectivo',
+    debit: 'Débito',
+    credit: 'Crédito',
+    mercadopago: 'Mercado Pago',
+    mp: 'Mercado Pago',
+    virtual: 'Virtual',
+  })[m] ?? m
 
 export const Ticket = forwardRef<HTMLDivElement, Props>(
   ({ order, orgName, discountAmount }, ref) => {
     const subtotal = order.items.reduce((a, b) => a + b.price * b.qty, 0)
     const hasDiscount = discountAmount && discountAmount > 0
+    const tipAmount = order.tip_amount ?? 0
+    const chargedTotal = order.total_price + tipAmount
+    const splitIncludesTip = order.tip_included_in_payments !== false && order.payments.length > 1
+    const tipMethod =
+      order.tip_payment_method ??
+      (order.tip_included_in_payments && order.payments.length === 1
+        ? order.payments[0].method
+        : null)
 
     return (
       <div ref={ref} className="print-wrapper-flex">
@@ -143,9 +158,34 @@ export const Ticket = forwardRef<HTMLDivElement, Props>(
               margin: '4px 0',
             }}
           >
-            <span>TOTAL</span>
+            <span>{tipAmount > 0 ? 'VENTA' : 'TOTAL'}</span>
             <span>${order.total_price.toLocaleString('es-AR')}</span>
           </div>
+
+          {tipAmount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '2px 0' }}>
+              <span>
+                Propina{tipMethod ? ` (${formatMethod(tipMethod)})` : ' (medio no informado)'}
+                {splitIncludesTip ? ' · incluida en pago dividido' : ''}
+              </span>
+              <span>${tipAmount.toLocaleString('es-AR')}</span>
+            </div>
+          )}
+
+          {tipAmount > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontWeight: 'bold',
+                fontSize: '15px',
+                margin: '4px 0',
+              }}
+            >
+              <span>TOTAL COBRADO</span>
+              <span>${chargedTotal.toLocaleString('es-AR')}</span>
+            </div>
+          )}
 
           <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #000' }} />
 

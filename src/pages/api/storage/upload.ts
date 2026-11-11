@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro'
 import { uploadOptimizedImage } from '../../../libs/storage'
 import supabaseAdmin from '../../../libs/supabaseAdmin'
-import { requireOrganizationOwner } from '../../../libs/server/requireOrganizationOwner'
+import { requireBranchStaff } from '../../../libs/server/branchStaff'
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -22,10 +22,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
         { status: 404 },
       )
 
-    const authorization = await requireOrganizationOwner(locals, slug)
+    const authorization = await requireBranchStaff(locals, slug)
     if (!authorization.authorized) return authorization.response
     if (bucket !== 'logos-url' && bucket !== 'menu-items') {
       return Response.json({ success: false, error: 'invalid_bucket' }, { status: 400 })
+    }
+    if (bucket === 'logos-url' && !authorization.isOwner) {
+      return Response.json({ success: false, error: 'owner_access_required' }, { status: 403 })
     }
 
     if (!file || file.size === 0 || !bucket || !slug) {

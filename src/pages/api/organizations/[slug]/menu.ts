@@ -3,7 +3,7 @@ import { validateNewMenuItem } from '../../../../libs/schemas/menu/new'
 import { validateDeleteItem } from '../../../../libs/schemas/menu/delete'
 import { PLANS } from '../../../../constants/suscriptions'
 import supabaseAdmin from '../../../../libs/supabaseAdmin'
-import { requireOrganizationOwner } from '../../../../libs/server/requireOrganizationOwner'
+import { requireBranchStaff } from '../../../../libs/server/branchStaff'
 
 export const GET: APIRoute = async ({ locals, url, params }) => {
   const { slug } = params
@@ -98,7 +98,7 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
   }
 
   try {
-    const authorization = await requireOrganizationOwner(locals, slug)
+    const authorization = await requireBranchStaff(locals, slug)
 
     if (!authorization.authorized) {
       return authorization.response
@@ -192,7 +192,7 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
 
     const newItemData = validation.data
 
-    const { data: newProduct, error: productError } = await locals.supabase
+    const { data: newProduct, error: productError } = await authorization.db
       .from('products')
       .insert({
         organization_id: organization.id,
@@ -232,7 +232,7 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
   }
 
   try {
-    const authorization = await requireOrganizationOwner(locals, slug)
+    const authorization = await requireBranchStaff(locals, slug)
 
     if (!authorization.authorized) {
       return authorization.response
@@ -261,7 +261,7 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
     const { id } = idValidation.data
     const updatedItemData = productValidation.data
 
-    const { data: updatedProduct, error: updateError } = await locals.supabase
+    const { data: updatedProduct, error: updateError } = await authorization.db
       .from('products')
       .update({
         name: updatedItemData.name,
@@ -304,7 +304,6 @@ export const DELETE: APIRoute = async ({ locals, params, request }) => {
     return Response.json({ success: false, error: 'slug_not_found' }, { status: 400 })
   }
 
-  const supabase = locals.supabase
   let body
   try {
     body = await request.json()
@@ -320,27 +319,14 @@ export const DELETE: APIRoute = async ({ locals, params, request }) => {
   const { id } = validation.data
 
   try {
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .single()
+    const authorization = await requireBranchStaff(locals, slug)
+    if (!authorization.authorized) return authorization.response
 
-    if (orgError || !org) {
-      return Response.json(
-        {
-          success: false,
-          error: 'organization_not_found',
-        },
-        { status: 404 },
-      )
-    }
-
-    const { error } = await supabase
+    const { error } = await authorization.db
       .from('products')
       .delete()
       .eq('id', id)
-      .eq('organization_id', org.id)
+      .eq('organization_id', authorization.organizationId)
 
     if (error) {
       if (error.code === 'PGRST116') {

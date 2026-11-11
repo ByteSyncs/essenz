@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro'
 import { validateUpdateSettings } from '../../../../../libs/schemas/settings'
-import { requireOrganizationOwner } from '../../../../../libs/server/requireOrganizationOwner'
+import { requireBranchStaff } from '../../../../../libs/server/branchStaff'
 
 const SETTINGS_COLUMNS =
   'menu_active, show_menu_images, address, city, contact_phone, contact_email, opening_hours, instagram_url, facebook_url'
+const READ_COLUMNS = `${SETTINGS_COLUMNS}, staff_can_edit_settings`
 
 export const GET: APIRoute = async ({ locals, params }) => {
   const { slug } = params
@@ -15,30 +16,33 @@ export const GET: APIRoute = async ({ locals, params }) => {
   }
 
   try {
-    const context = await requireOrganizationOwner(locals, slug)
+    const context = await requireBranchStaff(locals, slug)
     if (!context.authorized) return context.response
 
-    let { data: settings, error } = await locals.supabase
+    let { data: settings, error } = await context.db
       .from('organization_settings')
-      .select(SETTINGS_COLUMNS)
+      .select(READ_COLUMNS)
       .eq('organization_id', context.organizationId)
       .maybeSingle()
 
     if (error) throw error
 
     if (!settings) {
-      const { data: insertedSettings, error: insertError } = await locals.supabase
+      const { data: insertedSettings, error: insertError } = await context.db
         .from('organization_settings')
         .insert({ organization_id: context.organizationId })
-        .select(SETTINGS_COLUMNS)
+        .select(READ_COLUMNS)
         .single()
 
       if (insertError) throw insertError
       settings = insertedSettings
     }
 
+    const { staff_can_edit_settings: staffCanEdit, ...publicSettings } = settings
+    const canEdit = context.isOwner || staffCanEdit === true
+
     return Response.json(
-      { success: true, settings },
+      { success: true, settings: publicSettings, canEdit, isOwner: context.isOwner },
       { headers: { 'Cache-Control': 'private, no-store' } },
     )
   } catch (error) {
@@ -60,8 +64,23 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
   }
 
   try {
-    const context = await requireOrganizationOwner(locals, slug)
+    const context = await requireBranchStaff(locals, slug)
     if (!context.authorized) return context.response
+
+    if (!context.isOwner) {
+      const { data: permission, error: permissionError } = await context.db
+        .from('organization_settings')
+        .select('staff_can_edit_settings')
+        .eq('organization_id', context.organizationId)
+        .maybeSingle()
+      if (permissionError) throw permissionError
+      if (permission?.staff_can_edit_settings !== true) {
+        return Response.json(
+          { success: false, error: 'settings_read_only' },
+          { status: 403, headers: { 'Cache-Control': 'private, no-store' } },
+        )
+      }
+    }
 
     let body: unknown
     try {
@@ -81,7 +100,7 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
       )
     }
 
-    const { data: existingSettings, error: settingsError } = await locals.supabase
+    const { data: existingSettings, error: settingsError } = await context.db
       .from('organization_settings')
       .select('id')
       .eq('organization_id', context.organizationId)
@@ -94,11 +113,11 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
       updated_at: new Date().toISOString(),
     }
     const query = existingSettings
-      ? locals.supabase
+      ? context.db
           .from('organization_settings')
           .update(update)
           .eq('organization_id', context.organizationId)
-      : locals.supabase
+      : context.db
           .from('organization_settings')
           .insert({ ...update, organization_id: context.organizationId })
 

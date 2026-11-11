@@ -76,6 +76,7 @@ export default function LoginForm() {
       })
 
       const data = await res.json()
+      console.log({ data })
 
       if (!res.ok) {
         const backendErrorKey = data.error || 'internal_server_error'

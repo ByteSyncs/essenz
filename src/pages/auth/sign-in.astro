@@ -2,6 +2,7 @@
 import AuthLayout from '../../layouts/AuthLayout.astro'
 import LoginForm from '../../components/auth/SingInForm'
 import logo from '../../assets/essenz.webp'
+import { resolvePostLoginPath } from '../../libs/server/postLoginPath'
 
 const { locals, redirect, cookies, response, url } = Astro
 
@@ -9,8 +10,6 @@ response.headers.set('Cache-Control', 'no-store')
 response.headers.set('X-Frame-Options', 'DENY')
 response.headers.set('Content-Security-Policy', "frame-ancestors 'none'")
 response.headers.set('Referrer-Policy', 'no-referrer')
-
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i
 
 const notices = {
   'session-expired': 'Tu sesión venció. Ingresá de nuevo para continuar.',
@@ -36,19 +35,8 @@ if (accessToken && refreshToken) {
     const userId = data?.session?.user.id
 
     if (!error && userId) {
-      const { data: profile } = await locals.supabase
-        .from('profiles')
-        .select('organizations (slug)')
-        .eq('id', userId)
-        .maybeSingle()
-
-      const org = Array.isArray(profile?.organizations)
-        ? profile.organizations[0]
-        : profile?.organizations
-
-      if (org?.slug && SLUG_PATTERN.test(org.slug)) {
-        return redirect(`/${encodeURIComponent(org.slug)}/admin/dashboard`)
-      }
+      const path = await resolvePostLoginPath(locals.supabase, userId)
+      if (path) return redirect(path)
     }
   } catch (err) {
     console.error('[sign-in] auto-login failed:', err instanceof Error ? err.message : 'unknown')

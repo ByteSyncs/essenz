@@ -9,17 +9,28 @@ import SettingsView from './views/SettingsView'
 import InventoryView from './views/InventoryView'
 import StatisticsView from './views/StatisticsView'
 import ExpensesView from './views/ExpensesView'
-import TeamView from './views/TeamView'
-import { ALL_VIEWS, OWNER_ONLY_VIEWS, type DashboardView } from './dashboardViews'
+import AccessView from './views/AccessView'
+import CashRegisterView from './views/CashRegisterView'
+import SalesView from './views/SalesView'
+import { defaultViewForRole, viewsForRole, type DashboardView } from './dashboardViews'
 
 export type { DashboardView } from './dashboardViews'
 
 interface DashboardShellProps {
   slug: string
   role: string
+  showAccountLink?: boolean
 }
 
-const views: Record<DashboardView, React.ComponentType<{ slug: string }>> = {
+function rememberView(slug: string, view: DashboardView) {
+  try {
+    sessionStorage.setItem(`essenz_admin_view_${slug}`, view)
+  } catch {
+    return
+  }
+}
+
+const views: Record<DashboardView, React.ComponentType<{ slug: string; isOwner: boolean }>> = {
   home: HomeView,
   menu: MenuView,
   orders: OrdersView,
@@ -28,10 +39,16 @@ const views: Record<DashboardView, React.ComponentType<{ slug: string }>> = {
   inventory: InventoryView,
   statistics: StatisticsView,
   expenses: ExpensesView,
-  team: TeamView,
+  access: AccessView,
+  cash: CashRegisterView,
+  sales: SalesView,
 }
 
-export default function DashboardShell({ slug, role }: DashboardShellProps) {
+export default function DashboardShell({
+  slug,
+  role,
+  showAccountLink = false,
+}: DashboardShellProps) {
   const isOwner = role === 'admin' || role === 'owner'
   const [activeView, setActiveView] = useState<DashboardView>('home')
   const [visited, setVisited] = useState<DashboardView[]>([])
@@ -39,24 +56,32 @@ export default function DashboardShell({ slug, role }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    const savedView = sessionStorage.getItem('essenz_admin_view') as DashboardView
-    const isValid =
-      ALL_VIEWS.includes(savedView) && (isOwner || !OWNER_ONLY_VIEWS.includes(savedView))
-    const initial: DashboardView = isValid ? savedView : 'home'
+    const requestedView = new URLSearchParams(window.location.search).get('view') as DashboardView
+    const allowed = viewsForRole(isOwner)
+    let stored: string | null = null
+    try {
+      stored = sessionStorage.getItem(`essenz_admin_view_${slug}`)
+    } catch {
+      stored = null
+    }
+    const savedView = (allowed.includes(requestedView) ? requestedView : stored) as DashboardView
+    const initial: DashboardView = allowed.includes(savedView)
+      ? savedView
+      : defaultViewForRole(isOwner)
     setActiveView(initial)
     setVisited([initial])
     setReady(true)
-  }, [isOwner])
+  }, [isOwner, slug])
 
   const handleNav = useCallback(
     (view: DashboardView) => {
-      if (!isOwner && OWNER_ONLY_VIEWS.includes(view)) return
+      if (!viewsForRole(isOwner).includes(view)) return
       setActiveView(view)
       setVisited((prev) => (prev.includes(view) ? prev : [...prev, view]))
-      sessionStorage.setItem('essenz_admin_view', view)
+      rememberView(slug, view)
       setSidebarOpen(false)
     },
-    [isOwner],
+    [isOwner, slug],
   )
 
   return (
@@ -91,6 +116,7 @@ export default function DashboardShell({ slug, role }: DashboardShellProps) {
                 onNav={handleNav}
                 slug={slug}
                 isOwner={isOwner}
+                showAccountLink={showAccountLink}
                 onClose={() => setSidebarOpen(false)}
               />
             </motion.div>
@@ -101,14 +127,21 @@ export default function DashboardShell({ slug, role }: DashboardShellProps) {
           className="hidden md:flex flex-col border-r border-gray-100 shrink-0"
           style={{ width: 220 }}
         >
-          <Sidebar active={activeView} onNav={handleNav} slug={slug} isOwner={isOwner} />
+          <Sidebar
+            active={activeView}
+            onNav={handleNav}
+            slug={slug}
+            isOwner={isOwner}
+            showAccountLink={showAccountLink}
+          />
         </div>
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="flex md:hidden items-center justify-between px-5 py-4 border-b border-gray-100 bg-white shrink-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-50 transition-colors"
+              type="button"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-2 focus-visible:outline-(--clr-ink)"
               aria-label="Abrir menú"
             >
               <svg
@@ -137,7 +170,7 @@ export default function DashboardShell({ slug, role }: DashboardShellProps) {
                 const View = views[view]
                 return (
                   <div key={view} className={view === activeView ? 'block h-full' : 'hidden'}>
-                    <View slug={slug} />
+                    <View slug={slug} isOwner={isOwner} />
                   </div>
                 )
               })}

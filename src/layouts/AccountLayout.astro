@@ -1,0 +1,37 @@
+---
+import MinimalistLayout from './MinimalistLayout.astro'
+
+interface Props {
+  title: string
+  description?: string
+}
+
+const {
+  title,
+  description = 'Panel de cuenta de Essenz para ver y administrar todas tus sucursales.',
+} = Astro.props
+---
+
+<MinimalistLayout title={title} description={description}>
+  <a
+    href="#contenido"
+    class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-medium focus:text-(--clr-ink) focus:outline-2 focus:outline-(--clr-ink)"
+  >
+    Saltar al contenido
+  </a>
+  <slot />
+</MinimalistLayout>
+
+<style is:global>
+  .account-shell {
+    font-variant-numeric: tabular-nums;
+  }
+  .account-shell ::selection {
+    background: var(--clr-ink);
+    color: #fff;
+  }
+  .account-shell * {
+    scrollbar-width: thin;
+    scrollbar-color: #c4c4be transparent;
+  }
+</style>

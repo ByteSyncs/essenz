@@ -1,0 +1,8 @@
+---
+import AccountLayout from '../../layouts/AccountLayout.astro'
+import AccountApp from '../../components/react/account/AccountApp.tsx'
+---
+
+<AccountLayout title="Cuenta | Essenz">
+  <AccountApp client:load initialPath={Astro.url.pathname} />
+</AccountLayout>

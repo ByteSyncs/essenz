@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro'
 import * as Sentry from '@sentry/astro'
 import { validateLogin, type Login } from '../../../libs/schemas/auth/signIn'
+import { resolvePostLoginPath } from '../../../libs/server/postLoginPath'
 
 const ONE_MONTH_IN_SECONDS = 60 * 60 * 24 * 30
 
@@ -39,20 +40,8 @@ export const POST: APIRoute = async ({ locals, request, cookies }) => {
       password: authData.password,
     })
 
-    const { data: profileData } = await locals.supabase
-      .from('profiles')
-      .select('organizations (slug)')
-      .eq('id', data.user?.id)
-      .maybeSingle()
-
-    let slug
-    if (profileData) {
-      const org = Array.isArray(profileData.organizations)
-        ? profileData.organizations[0]
-        : profileData.organizations
-
-      slug = org?.slug
-    }
+    const redirectPath =
+      !error && data.user ? await resolvePostLoginPath(locals.supabase, data.user.id) : null
 
     const errorMap: Record<string, number> = {
       invalid_credentials: 400,
@@ -101,7 +90,7 @@ export const POST: APIRoute = async ({ locals, request, cookies }) => {
           success: true,
           requiresConfirmation: false,
           message: 'login_successfully',
-          url: `/${slug}/admin/dashboard`,
+          url: redirectPath ?? '/',
         }),
         { status: 200 },
       )

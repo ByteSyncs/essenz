@@ -1,5 +1,12 @@
 import type { APIRoute } from 'astro'
-import { requireOrganizationOwner } from '../../../../../libs/server/requireOrganizationOwner'
+import { parseCashAmount } from '../../../../../libs/cashRegister'
+import { requireBranchStaff } from '../../../../../libs/server/branchStaff'
+
+function errorCode(error: unknown) {
+  if (!error || typeof error !== 'object') return ''
+  const value = error as { code?: unknown; message?: unknown }
+  return `${typeof value.code === 'string' ? value.code : ''} ${typeof value.message === 'string' ? value.message : ''}`
+}
 
 export const GET: APIRoute = async ({ locals, params, url }) => {
   const { slug } = params
@@ -11,12 +18,12 @@ export const GET: APIRoute = async ({ locals, params, url }) => {
   const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 50
 
   try {
-    const authorization = await requireOrganizationOwner(locals, slug)
+    const authorization = await requireBranchStaff(locals, slug)
     if (!authorization.authorized) return authorization.response
 
-    const { data: expenses, error: expError } = await locals.supabase
+    const { data: expenses, error: expError } = await authorization.db
       .from('expenses')
-      .select('id, description, amount, category, created_at')
+      .select('id, description, amount, category, uses_cash, created_at')
       .eq('organization_id', authorization.organizationId)
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -37,19 +44,30 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
   }
 
   try {
-    const authorization = await requireOrganizationOwner(locals, slug)
+    const authorization = await requireBranchStaff(locals, slug)
     if (!authorization.authorized) return authorization.response
 
-    let body: any
+    let body: Record<string, unknown>
     try {
-      body = await request.json()
+      const value: unknown = await request.json()
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return Response.json({ success: false, error: 'invalid_body' }, { status: 400 })
+      }
+      body = value as Record<string, unknown>
     } catch {
       return Response.json({ success: false, error: 'invalid_body' }, { status: 400 })
     }
 
     const { description, amount, category } = body
+    const usesCash = body.usesCash === undefined ? true : body.usesCash
 
-    if (!description?.trim() || !amount || parseFloat(amount) <= 0) {
+    const normalizedAmount = parseCashAmount(amount, false)
+    if (
+      typeof description !== 'string' ||
+      !description.trim() ||
+      normalizedAmount === null ||
+      typeof usesCash !== 'boolean'
+    ) {
       return Response.json({ success: false, error: 'invalid_fields' }, { status: 422 })
     }
 
@@ -58,18 +76,24 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
       return Response.json({ success: false, error: 'invalid_category' }, { status: 422 })
     }
 
-    const { data: expense, error: insertError } = await locals.supabase
+    const { data: expense, error: insertError } = await authorization.db
       .from('expenses')
       .insert({
         organization_id: authorization.organizationId,
         description: description.trim(),
-        amount: parseFloat(amount),
+        amount: normalizedAmount,
         category,
+        uses_cash: usesCash,
       })
-      .select('id, description, amount, category, created_at')
+      .select('id, description, amount, category, uses_cash, created_at')
       .single()
 
-    if (insertError) throw insertError
+    if (insertError) {
+      if (errorCode(insertError).includes('cash_register_closed')) {
+        return Response.json({ success: false, error: 'cash_register_closed' }, { status: 409 })
+      }
+      throw insertError
+    }
 
     return Response.json({ success: true, data: expense })
   } catch (err) {
@@ -87,10 +111,10 @@ export const DELETE: APIRoute = async ({ locals, params, url }) => {
   }
 
   try {
-    const authorization = await requireOrganizationOwner(locals, slug)
+    const authorization = await requireBranchStaff(locals, slug)
     if (!authorization.authorized) return authorization.response
 
-    const { error: deleteError } = await locals.supabase
+    const { error: deleteError } = await authorization.db
       .from('expenses')
       .delete()
       .eq('id', expenseId)

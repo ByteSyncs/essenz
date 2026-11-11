@@ -1,5 +1,6 @@
 const OWNER_ROLES = new Set(['admin', 'owner'])
-const OWNER_ONLY_RESOURCES = new Set(['stats', 'expenses', 'settings', 'team', 'categories'])
+const OWNER_ONLY_RESOURCES = new Set(['access'])
+const READ_ONLY_RESOURCES = new Set(['stats'])
 
 export function isOwnerRole(role: string | null | undefined) {
   return typeof role === 'string' && OWNER_ROLES.has(role)
@@ -14,9 +15,7 @@ export function canAccessOrganizationApi(role: string, method: string, pathSegme
 
   if (!resource) return isRead
   if (OWNER_ONLY_RESOURCES.has(resource)) return false
-  if (resource === 'menu') return isRead
-  if (resource === 'inventory') return verb !== 'DELETE'
-  if (resource === 'orders') return true
+  if (READ_ONLY_RESOURCES.has(resource)) return isRead
 
-  return isRead
+  return true
 }

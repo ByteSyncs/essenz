@@ -1,0 +1,60 @@
+---
+import AuthLayout from '../../layouts/AuthLayout.astro'
+import BranchAccessForm from '../../components/react/staff/BranchAccessForm'
+import { isAccessToken } from '../../libs/schemas/branchAccess'
+import supabaseAdmin from '../../libs/supabaseAdmin'
+
+const { response, params } = Astro
+
+response.headers.set('Cache-Control', 'no-store')
+response.headers.set('X-Frame-Options', 'DENY')
+response.headers.set('Content-Security-Policy', "frame-ancestors 'none'")
+response.headers.set('Referrer-Policy', 'no-referrer')
+
+const token = (params.token ?? '').toLowerCase()
+let branchName: string | null = null
+
+if (isAccessToken(token)) {
+  const { data } = await supabaseAdmin
+    .from('branch_access')
+    .select('enabled, organizations (name)')
+    .eq('token', token)
+    .maybeSingle()
+
+  const organization = Array.isArray(data?.organizations)
+    ? data.organizations[0]
+    : data?.organizations
+
+  if (data?.enabled && organization?.name) branchName = organization.name
+}
+---
+
+<AuthLayout
+  title="Acceso del turno — Essenz"
+  description="Ingresá al panel de trabajo de tu turno."
+>
+  <main class="flex min-h-svh items-center justify-center bg-[#faf8f4] px-5 py-10">
+    <div class="w-full max-w-md border border-gray-200 bg-white p-6 sm:p-8">
+      {
+        branchName ? (
+          <>
+            <h1 class="text-2xl font-bold tracking-tight text-(--clr-ink)">{branchName}</h1>
+            <p class="mt-2 text-sm text-gray-700">
+              Ingresá la contraseña que te dio el dueño para abrir el panel del turno.
+            </p>
+            <BranchAccessForm client:load token={token} name={branchName} />
+          </>
+        ) : (
+          <>
+            <h1 class="text-2xl font-bold tracking-tight text-(--clr-ink)">
+              Este acceso no está disponible
+            </h1>
+            <p class="mt-2 text-sm text-gray-700">
+              El link no es válido o el dueño lo desactivó. Pedile uno nuevo.
+            </p>
+          </>
+        )
+      }
+    </div>
+  </main>
+</AuthLayout>

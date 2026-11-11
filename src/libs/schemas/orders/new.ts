@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
 const STATUS = ['pending', 'preparing', 'delivered'] as const
-const PAYMENT_METHODS = ['cash', 'debit', 'credit', 'virtual'] as const
+const PAYMENT_METHODS = ['cash', 'debit', 'credit', 'mercadopago', 'virtual'] as const
 const DESCOUNT_REASON = ['clients', 'employees', 'others'] as const
 
 const PaymentSchema = z.object({

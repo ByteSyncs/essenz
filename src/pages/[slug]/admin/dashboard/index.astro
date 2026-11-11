@@ -1,6 +1,7 @@
 ---
 import MinimalistLayout from '../../../../layouts/MinimalistLayout.astro'
 import DashboardShell from '../../../../components/react/dashboard/DashboardShell.tsx'
+import { isOwnerRole } from '../../../../libs/permissions'
 
 const { slug } = Astro.params
 const { supabase, user } = Astro.locals
@@ -15,7 +16,8 @@ const { data: profile } = await supabase
     `
     is_setup_complete,
     role,
-    organizations (slug)
+    account_id,
+    organizations (slug, account_id)
   `,
   )
   .eq('id', user.id)
@@ -25,8 +27,29 @@ const org = Array.isArray(profile?.organizations)
   ? profile.organizations[0]
   : profile?.organizations
 
-if (!org || org.slug !== slug) {
+if (!org) {
   return Astro.redirect('/?error=unauthorized')
+}
+
+const isOwner = isOwnerRole(profile?.role)
+
+if (org.slug !== slug) {
+  const accountId = profile?.account_id ?? org.account_id ?? null
+  let isAccountBranch = false
+
+  if (isOwner && accountId) {
+    const { data: branch } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('slug', slug)
+      .eq('account_id', accountId)
+      .maybeSingle()
+    isAccountBranch = Boolean(branch)
+  }
+
+  if (!isAccountBranch) {
+    return Astro.redirect('/?error=unauthorized')
+  }
 }
 
 if (!profile?.is_setup_complete) {
@@ -38,5 +61,10 @@ if (!profile?.is_setup_complete) {
   title="Dashboard | Essenz"
   description="Panel de administración de tu carta digital."
 >
-  <DashboardShell slug={slug!} role={profile?.role ?? 'employee'} client:load />
+  <DashboardShell
+    slug={slug!}
+    role={profile?.role ?? 'employee'}
+    showAccountLink={isOwner}
+    client:load
+  />
 </MinimalistLayout>

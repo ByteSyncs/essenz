@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro'
 import { validateNewCategorie } from '../../../../libs/schemas/organizations/categories'
-import * as Sentry from '@sentry/astro'
+import { requireBranchStaff } from '../../../../libs/server/branchStaff'
 
 export const POST: APIRoute = async ({ locals, request, params }) => {
   const { slug } = params
@@ -9,7 +9,6 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
     return Response.json({ success: false, error: 'slug_not_found' }, { status: 400 })
   }
 
-  const supabase = locals.supabase
   let body
   try {
     body = await request.json()
@@ -25,20 +24,13 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
   const categorie = validation.data
 
   try {
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .single()
+    const authorization = await requireBranchStaff(locals, slug)
+    if (!authorization.authorized) return authorization.response
 
-    if (orgError || !org) {
-      return Response.json({ success: false, error: 'organization_not_found' }, { status: 404 })
-    }
-
-    const { data: newCategory, error: insertError } = await supabase
+    const { data: newCategory, error: insertError } = await authorization.db
       .from('categories')
       .insert({
-        organization_id: org.id,
+        organization_id: authorization.organizationId,
         title: categorie?.title,
         display_order: categorie?.display_order || 0,
       })
@@ -55,7 +47,6 @@ export const POST: APIRoute = async ({ locals, request, params }) => {
     return Response.json({ success: true, data: newCategory }, { status: 201 })
   } catch (err) {
     console.error(err)
-    // Sentry.captureException(err)
     return Response.json({ success: false, error: 'internal_server_error' }, { status: 500 })
   }
 }

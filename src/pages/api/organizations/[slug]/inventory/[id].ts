@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro'
+import { requireBranchStaff } from '../../../../../libs/server/branchStaff'
 import { validateUpdateItemInventory } from '../../../../../libs/schemas/inventory/update'
 
 export const DELETE: APIRoute = async ({ locals, params }) => {
@@ -11,23 +12,11 @@ export const DELETE: APIRoute = async ({ locals, params }) => {
     return Response.json({ success: false, error: 'itemID_not_found' }, { status: 400 })
   }
 
-  const supabase = locals.supabase
   try {
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .single()
-
-    if (orgError || !org) {
-      return Response.json(
-        {
-          success: false,
-          error: 'organization_not_found',
-        },
-        { status: 404 },
-      )
-    }
+    const authorization = await requireBranchStaff(locals, slug)
+    if (!authorization.authorized) return authorization.response
+    const org = { id: authorization.organizationId }
+    const supabase = authorization.db
 
     const { error: deleteError } = await supabase
       .from('inventory_items')
@@ -62,7 +51,6 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
     return Response.json({ success: false, error: 'itemID_not_found' }, { status: 400 })
   }
 
-  const supabase = locals.supabase
   let body
   try {
     body = await request.json()
@@ -78,21 +66,10 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
   const { stock } = validation.data
 
   try {
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('slug', slug)
-      .single()
-
-    if (orgError || !org) {
-      return Response.json(
-        {
-          success: false,
-          error: 'organization_not_found',
-        },
-        { status: 404 },
-      )
-    }
+    const authorization = await requireBranchStaff(locals, slug)
+    if (!authorization.authorized) return authorization.response
+    const org = { id: authorization.organizationId }
+    const supabase = authorization.db
 
     const { data: updateItem, error: updateError } = await supabase
       .from('inventory_items')
@@ -100,6 +77,7 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
         stock,
       })
       .eq('id', id)
+      .eq('organization_id', org.id)
       .select()
       .single()
 
