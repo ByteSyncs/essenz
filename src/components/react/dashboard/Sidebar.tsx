@@ -244,7 +244,7 @@ export default function Sidebar({
     .filter((item): item is (typeof navItems)[number] => Boolean(item))
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full min-h-0 bg-white">
       <div className="px-5 pt-6 pb-5 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div>

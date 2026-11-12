@@ -85,10 +85,10 @@ export default function DashboardShell({
   )
 
   return (
-    <div className="min-h-screen bg-(--clr-bg) flex items-start justify-center py-6 px-4 md:py-10 md:px-6">
+    <div className="h-dvh bg-(--clr-bg) flex items-start justify-center py-3 px-3 sm:py-6 sm:px-4 md:py-10 md:px-6">
       <div
-        className="w-full flex bg-white border border-gray-100 shadow-sm overflow-hidden"
-        style={{ maxWidth: '1400px', minHeight: 'calc(100vh - 5rem)', borderRadius: 0 }}
+        className="w-full h-full flex bg-white border border-gray-100 shadow-sm overflow-hidden"
+        style={{ maxWidth: '1400px', borderRadius: 0 }}
       >
         <AnimatePresence>
           {sidebarOpen && (
@@ -124,7 +124,7 @@ export default function DashboardShell({
         </AnimatePresence>
 
         <div
-          className="hidden md:flex flex-col border-r border-gray-100 shrink-0"
+          className="hidden md:flex flex-col min-h-0 border-r border-gray-100 shrink-0"
           style={{ width: 220 }}
         >
           <Sidebar
@@ -136,7 +136,7 @@ export default function DashboardShell({
           />
         </div>
 
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
           <div className="flex md:hidden items-center justify-between px-5 py-4 border-b border-gray-100 bg-white shrink-0">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -164,7 +164,7 @@ export default function DashboardShell({
             <div className="w-9" />
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {ready &&
               visited.map((view) => {
                 const View = views[view]

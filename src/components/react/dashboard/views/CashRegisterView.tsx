@@ -16,10 +16,15 @@ import {
   Wallet,
 } from 'lucide-react'
 import {
+  buildCashFeed,
   cashDifference,
   formatCashAmount,
   formatCashDate,
+  formatCashMoment,
+  formatCashTime,
   parseCashInput,
+  splitPaymentTotals,
+  type CashFeedEntry,
 } from '../../../../libs/cashRegister'
 import type {
   CashMovementType,
@@ -44,6 +49,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_text: 'Revisá los campos de texto: alguno supera el límite permitido.',
   invalid_session: 'No pudimos identificar la caja. Actualizá la pantalla.',
   internal_server_error: 'No pudimos completar la operación. Intentá nuevamente.',
+}
+
+const EXPENSE_CATEGORIES: Record<string, string> = {
+  supplies: 'Insumos',
+  maintenance: 'Mantenimiento',
+  utilities: 'Servicios',
+  staff: 'Personal',
+  other: 'Otros',
 }
 
 const PAYMENT_METHODS: Record<string, string> = {
@@ -253,107 +266,94 @@ function SectionTitle({
   )
 }
 
-function SummaryPanel({
+function CashHero({
   summary,
   openingAmount,
 }: {
   summary: CashRegisterSummary
   openingAmount: number
 }) {
-  const payments = useMemo(() => {
-    const amounts = summary.paymentMethods.map((payment) => payment.amount)
-    const maxAmount = Math.max(...amounts, 1)
-
-    return [...summary.paymentMethods]
-      .sort((a, b) => b.amount - a.amount)
-      .map((payment) => ({
-        ...payment,
-        label: PAYMENT_METHODS[payment.method] ?? payment.method,
-        barWidth: Math.max(0, (payment.amount / maxAmount) * 100),
-      }))
-  }, [summary.paymentMethods])
+  const cashSales = summary.paymentMethods.find((payment) => payment.method === 'cash')?.amount ?? 0
+  const averageTicket =
+    summary.ticketCount > 0 ? Math.round(summary.netSales / summary.ticketCount) : 0
+  const ledger = [
+    { label: 'Fondo inicial', value: openingAmount, sign: 1 },
+    { label: 'Ventas en efectivo', value: cashSales, sign: 1 },
+    { label: 'Ingresos manuales', value: summary.movements.cashIn, sign: 1 },
+    { label: 'Egresos', value: summary.movements.cashOut, sign: -1 },
+    { label: 'Retiros a caja fuerte', value: summary.movements.safeDrop, sign: -1 },
+    { label: 'Gastos pagados desde caja', value: summary.cashExpenses, sign: -1 },
+  ]
+  const stats = [
+    { label: 'Ventas netas', value: formatCashAmount(summary.netSales), strong: true },
+    { label: 'Ventas brutas', value: formatCashAmount(summary.grossSales) },
+    {
+      label: 'Tickets',
+      value: summary.ticketCount.toLocaleString('es-AR'),
+      detail:
+        summary.cancelledTicketCount > 0
+          ? `${summary.cancelledTicketCount.toLocaleString('es-AR')} ${
+              summary.cancelledTicketCount === 1 ? 'anulado' : 'anulados'
+            }`
+          : undefined,
+    },
+    { label: 'Ticket promedio', value: formatCashAmount(averageTicket) },
+    { label: 'Descuentos', value: formatCashAmount(summary.discounts) },
+    { label: 'Propinas', value: formatCashAmount(summary.tips) },
+  ]
 
   return (
     <>
-      <section className="grid min-w-0 gap-6 border border-gray-200 bg-white p-5 sm:p-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <section
+        aria-label="Resumen de la caja"
+        className="grid min-w-0 gap-6 border border-gray-200 bg-white p-5 sm:p-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]"
+      >
         <div className="min-w-0 border-b border-gray-200 pb-5 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-7">
           <div className="flex items-start gap-3">
             <Wallet className="mt-1 h-5 w-5 shrink-0 text-(--clr-ink)" aria-hidden="true" />
             <div className="min-w-0">
               <p className="text-sm font-semibold text-gray-700">Efectivo esperado en caja</p>
-              <p className="mt-2 break-words-word text-3xl font-semibold leading-tight tracking-[-0.03em] tabular-nums text-gray-950 sm:text-4xl">
+              <p className="mt-2 [overflow-wrap:anywhere] text-4xl font-semibold leading-tight tracking-[-0.03em] tabular-nums text-gray-950 sm:text-5xl">
                 {formatCashAmount(summary.cashExpected)}
               </p>
             </div>
           </div>
-          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:max-w-lg">
-            <dt className="min-w-0 text-gray-600">Ventas en efectivo</dt>
-            <dd className="min-w-0 text-right font-medium tabular-nums text-gray-950">
-              {formatCashAmount(
-                summary.paymentMethods.find((payment) => payment.method === 'cash')?.amount ?? 0,
-              )}
-            </dd>
-            <dt className="min-w-0 text-gray-600">Ingresos manuales</dt>
-            <dd className="min-w-0 text-right font-medium tabular-nums text-gray-950">
-              +{formatCashAmount(summary.movements.cashIn)}
-            </dd>
-            <dt className="min-w-0 text-gray-600">Egresos y retiros</dt>
-            <dd className="min-w-0 text-right font-medium tabular-nums text-gray-950">
-              −{formatCashAmount(summary.movements.cashOut + summary.movements.safeDrop)}
-            </dd>
-            <dt className="min-w-0 text-gray-600">Gastos pagados desde caja</dt>
-            <dd className="min-w-0 text-right font-medium tabular-nums text-gray-950">
-              −{formatCashAmount(summary.cashExpenses)}
-            </dd>
-            <dt className="border-t border-gray-200 pt-3 font-semibold text-gray-800">
-              Fondo inicial
-            </dt>
-            <dd className="border-t border-gray-200 pt-3 text-right font-semibold tabular-nums text-gray-950">
-              {formatCashAmount(openingAmount)}
-            </dd>
+          <dl className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2.5 text-sm sm:max-w-lg">
+            {ledger.map((row) => (
+              <div key={row.label} className="col-span-2 grid grid-cols-subgrid">
+                <dt className={`min-w-0 ${row.value === 0 ? 'text-gray-500' : 'text-gray-700'}`}>
+                  {row.label}
+                </dt>
+                <dd
+                  className={`text-right font-medium tabular-nums ${
+                    row.value === 0 ? 'text-gray-500' : 'text-gray-950'
+                  }`}
+                >
+                  {row.value === 0 ? '' : row.sign > 0 ? '+' : '−'}
+                  {formatCashAmount(row.value)}
+                </dd>
+              </div>
+            ))}
           </dl>
         </div>
 
         <div className="grid min-w-0 grid-cols-2 content-start gap-x-4 gap-y-6">
-          <div className="min-w-0">
-            <p className="text-sm text-gray-600">Ventas brutas</p>
-            <p className="mt-1 break-words-word text-base font-semibold tabular-nums text-gray-950">
-              {formatCashAmount(summary.grossSales)}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-600">Ventas netas</p>
-            <p className="mt-1 break-words-word text-xl font-semibold tabular-nums text-gray-950">
-              {formatCashAmount(summary.netSales)}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-600">Tickets</p>
-            <p className="mt-1 text-xl font-semibold tabular-nums text-gray-950">
-              {summary.ticketCount.toLocaleString('es-AR')}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-600">Descuentos</p>
-            <p className="mt-1 break-words-word text-base font-semibold tabular-nums text-gray-950">
-              {formatCashAmount(summary.discounts)}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-600">Propinas registradas</p>
-            <p className="mt-1 break-words-word text-base font-semibold tabular-nums text-gray-950">
-              {formatCashAmount(summary.tips)}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-600">Tickets anulados</p>
-            <p className="mt-1 text-base font-semibold tabular-nums text-gray-950">
-              {summary.cancelledTicketCount.toLocaleString('es-AR')}
-            </p>
-          </div>
+          {stats.map((stat) => (
+            <div key={stat.label} className="min-w-0">
+              <p className="text-sm text-gray-600">{stat.label}</p>
+              <p
+                className={`mt-1 [overflow-wrap:anywhere] font-semibold tabular-nums text-gray-950 ${
+                  stat.strong ? 'text-xl' : 'text-base'
+                }`}
+              >
+                {stat.value}
+              </p>
+              {stat.detail && <p className="mt-0.5 text-xs text-gray-600">{stat.detail}</p>}
+            </div>
+          ))}
           <p className="col-span-2 text-xs leading-5 text-gray-600">
-            Las propinas se asignan al medio elegido al cargar el pedido; si no se cambia, se
-            registran en efectivo. Se muestran aparte de las ventas netas.
+            Las propinas van al medio de pago elegido en el pedido (efectivo si no se indicó) y no
+            se suman a las ventas netas.
           </p>
         </div>
       </section>
@@ -371,198 +371,271 @@ function SummaryPanel({
           </span>
         </p>
       )}
-
-      <div className="grid min-w-0 gap-8 lg:grid-cols-2">
-        <section className="min-w-0 border border-gray-200 bg-white p-5 sm:p-6">
-          <SectionTitle
-            icon={<ReceiptText className="h-5 w-5" />}
-            title="Ventas por medio de pago"
-            detail="Importe cobrado por medio, con las propinas asignadas incluidas."
-          />
-          {payments.length === 0 ? (
-            <p className="py-5 text-sm text-gray-600">Todavía no hay pagos en este turno.</p>
-          ) : (
-            <ul className="space-y-5">
-              {payments.map((payment) => (
-                <li key={payment.method} className="min-w-0">
-                  <div className="flex min-w-0 items-baseline justify-between gap-3">
-                    <span className="min-w-0 truncate text-sm font-medium text-gray-800">
-                      {payment.label}
-                    </span>
-                    <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-950">
-                      {formatCashAmount(payment.amount)}
-                    </span>
-                  </div>
-                  <div
-                    className="mt-2 h-2 overflow-hidden bg-gray-100"
-                    role="img"
-                    aria-label={`${payment.label}: ${formatCashAmount(payment.amount)}`}
-                  >
-                    <div
-                      className="h-full bg-(--clr-accent)"
-                      style={{ width: `${payment.barWidth}%` }}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs tabular-nums text-gray-600">
-                    {payment.tickets.toLocaleString('es-AR')}{' '}
-                    {payment.tickets === 1 ? 'ticket' : 'tickets'}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-          {summary.paymentMethods.some((payment) => payment.method === 'virtual') && (
-            <p className="mt-5 border-t border-gray-200 pt-4 text-xs leading-5 text-gray-600">
-              “Virtual” es la categoría que guarda el sistema hoy; no permite distinguir
-              transferencias de pagos QR.
-            </p>
-          )}
-        </section>
-
-        <section className="min-w-0 border border-gray-200 bg-white p-5 sm:p-6">
-          <SectionTitle
-            icon={<ArrowDownToLine className="h-5 w-5" />}
-            title="Movimientos de efectivo"
-            detail="Ingresos, egresos y retiros separados de las ventas."
-          />
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-gray-200 pb-5 text-sm">
-            <dt className="text-gray-600">Ingresos</dt>
-            <dd className="text-right font-medium tabular-nums text-gray-950">
-              {formatCashAmount(summary.movements.cashIn)}
-            </dd>
-            <dt className="text-gray-600">Egresos</dt>
-            <dd className="text-right font-medium tabular-nums text-gray-950">
-              {formatCashAmount(summary.movements.cashOut)}
-            </dd>
-            <dt className="text-gray-600">Retirado a caja fuerte</dt>
-            <dd className="text-right font-medium tabular-nums text-gray-950">
-              {formatCashAmount(summary.movements.safeDrop)}
-            </dd>
-            <dt className="text-gray-600">Gastos pagados desde caja</dt>
-            <dd className="text-right font-medium tabular-nums text-gray-950">
-              {formatCashAmount(summary.cashExpenses)}
-            </dd>
-          </dl>
-          <p className="mt-4 flex gap-2 text-xs leading-5 text-gray-600">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-(--clr-ink)" aria-hidden="true" />
-            Si hace falta corregir un movimiento, podés anularlo. Queda en el historial, pero deja
-            de contar para el efectivo esperado.
-          </p>
-        </section>
-      </div>
     </>
   )
 }
 
-function MovementList({
-  movements,
+function PaymentsCard({ summary }: { summary: CashRegisterSummary }) {
+  const { cash, electronic } = splitPaymentTotals(summary.paymentMethods)
+  const payments = useMemo(() => {
+    const maxAmount = Math.max(...summary.paymentMethods.map((payment) => payment.amount), 1)
+
+    return [...summary.paymentMethods]
+      .sort((a, b) => b.amount - a.amount)
+      .map((payment) => ({
+        ...payment,
+        label: PAYMENT_METHODS[payment.method] ?? payment.method,
+        barWidth: Math.max(0, (payment.amount / maxAmount) * 100),
+      }))
+  }, [summary.paymentMethods])
+
+  return (
+    <section className="min-w-0 border border-gray-200 bg-white p-5 sm:p-6">
+      <SectionTitle
+        icon={<ReceiptText className="h-5 w-5" />}
+        title="Cobrado por medio de pago"
+        detail="Importes del turno, con las propinas asignadas incluidas."
+      />
+      <dl className="grid grid-cols-2 gap-4 border-b border-gray-200 pb-5">
+        <div className="min-w-0">
+          <dt className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="h-2 w-2 shrink-0 bg-(--clr-ink)" aria-hidden="true" />
+            Efectivo físico
+          </dt>
+          <dd className="mt-1 [overflow-wrap:anywhere] text-xl font-semibold tabular-nums text-gray-950">
+            {formatCashAmount(cash)}
+          </dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="h-2 w-2 shrink-0 bg-(--clr-accent)" aria-hidden="true" />
+            Electrónico
+          </dt>
+          <dd className="mt-1 [overflow-wrap:anywhere] text-xl font-semibold tabular-nums text-gray-950">
+            {formatCashAmount(electronic)}
+          </dd>
+        </div>
+      </dl>
+      {payments.length === 0 ? (
+        <p className="py-5 text-sm text-gray-600">Todavía no hay pagos en este turno.</p>
+      ) : (
+        <ul className="mt-5 space-y-5">
+          {payments.map((payment) => (
+            <li key={payment.method} className="min-w-0">
+              <div className="flex min-w-0 items-baseline justify-between gap-3">
+                <span className="min-w-0 truncate text-sm font-medium text-gray-800">
+                  {payment.label}
+                </span>
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-950">
+                  {formatCashAmount(payment.amount)}
+                </span>
+              </div>
+              <div
+                className="mt-2 h-2 overflow-hidden bg-gray-100"
+                role="img"
+                aria-label={`${payment.label}: ${formatCashAmount(payment.amount)}`}
+              >
+                <div
+                  className={`h-full ${payment.method === 'cash' ? 'bg-(--clr-ink)' : 'bg-(--clr-accent)'}`}
+                  style={{ width: `${payment.barWidth}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs tabular-nums text-gray-600">
+                {payment.tickets.toLocaleString('es-AR')}{' '}
+                {payment.tickets === 1 ? 'ticket' : 'tickets'}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {summary.paymentMethods.some((payment) => payment.method === 'virtual') && (
+        <p className="mt-5 border-t border-gray-200 pt-4 text-xs leading-5 text-gray-600">
+          “Virtual” es la categoría que guarda el sistema hoy; no permite distinguir transferencias
+          de pagos QR.
+        </p>
+      )}
+    </section>
+  )
+}
+
+const FEED_VISIBLE = 6
+
+function CashFeed({
+  entries,
   onVoid,
   voidingMovementId,
   isBusy = false,
+  emptyMessage,
+  limit = FEED_VISIBLE,
 }: {
-  movements: CashRegisterMovement[]
+  entries: CashFeedEntry[]
   onVoid?: (movementId: string) => Promise<boolean>
   voidingMovementId?: string | null
   isBusy?: boolean
+  emptyMessage: string
+  limit?: number
 }) {
   const [confirmingMovementId, setConfirmingMovementId] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
-  if (movements.length === 0) {
-    return (
-      <p className="py-4 text-sm leading-6 text-gray-600">
-        No hay movimientos manuales. Las ventas en efectivo ya están incluidas en el resumen.
-      </p>
-    )
+  if (entries.length === 0) {
+    return <p className="py-4 text-sm leading-6 text-gray-600">{emptyMessage}</p>
   }
 
+  const visible = expanded ? entries : entries.slice(0, limit)
+  const hidden = entries.length - visible.length
+
   return (
-    <ul className="divide-y divide-gray-200">
-      {movements.map((movement) => {
-        const sign = cashMovementSign(movement)
-        const Icon = sign > 0 ? ArrowDownLeft : ArrowUpRight
-        return (
-          <li
-            key={movement.id}
-            className="flex min-w-0 flex-wrap items-start gap-3 py-4 first:pt-1"
-          >
-            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-600" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <p
-                className={`break-words-word text-sm font-medium ${
-                  movement.voidedAt ? 'text-gray-500' : 'text-gray-900'
-                }`}
+    <>
+      <ul className="divide-y divide-gray-200">
+        {visible.map((entry) => {
+          if (entry.kind === 'expense') {
+            const { expense } = entry
+            return (
+              <li
+                key={entry.id}
+                className="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1 py-3.5 first:pt-1"
               >
-                {movement.description}
-              </p>
-              <p className="mt-1 break-words-word text-xs leading-5 text-gray-600">
-                {MOVEMENT_LABELS[movement.type]} · {formatCashDate(movement.createdAt)}
-                {movement.createdByName ? ` · ${movement.createdByName}` : ''}
-              </p>
-              {movement.voidedAt && (
-                <p className="mt-1 text-xs font-medium text-rose-800">
-                  Anulado · {formatCashDate(movement.voidedAt)}
-                </p>
-              )}
-              {movement.note && (
-                <p className="mt-1 break-words-word text-xs leading-5 text-gray-600">
-                  {movement.note}
-                </p>
-              )}
-              {onVoid && !movement.voidedAt && confirmingMovementId === movement.id && (
-                <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-                  <p className="w-full text-xs leading-5 text-gray-700">
-                    Se excluirá del efectivo esperado y quedará marcado en el historial.
+                <span
+                  className="flex h-8 w-8 items-center justify-center bg-amber-50 text-amber-900"
+                  aria-hidden="true"
+                >
+                  <ReceiptText className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1 basis-40">
+                  <p className="[overflow-wrap:anywhere] text-sm font-medium text-gray-900">
+                    {expense.description}
                   </p>
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={async () => {
-                      if (await onVoid(movement.id)) setConfirmingMovementId(null)
-                    }}
-                    className="inline-flex min-h-9 items-center gap-2 border border-rose-300 px-3 text-xs font-semibold text-rose-900 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-800 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {voidingMovementId === movement.id && (
-                      <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                    )}
-                    Confirmar anulación
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => setConfirmingMovementId(null)}
-                    className="min-h-9 px-2 text-xs font-medium text-gray-700 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink)"
-                  >
-                    Cancelar
-                  </button>
+                  <p className="mt-0.5 [overflow-wrap:anywhere] text-xs leading-5 text-gray-600">
+                    Gasto · {EXPENSE_CATEGORIES[expense.category] ?? 'Otros'} ·{' '}
+                    {formatCashMoment(expense.createdAt)}
+                  </p>
                 </div>
-              )}
-            </div>
-            <div className="ml-auto flex shrink-0 flex-col items-end gap-2">
+                <span className="ml-auto pl-2 text-right text-sm font-semibold tabular-nums text-gray-950">
+                  −{formatCashAmount(expense.amount)}
+                </span>
+              </li>
+            )
+          }
+
+          const { movement } = entry
+          const sign = cashMovementSign(movement)
+          const Icon =
+            movement.type === 'safe_drop'
+              ? ArrowDownToLine
+              : sign > 0
+                ? ArrowDownLeft
+                : ArrowUpRight
+          const label = MOVEMENT_LABELS[movement.type]
+          const showLabel = movement.description.trim().toLowerCase() !== label.toLowerCase()
+          const voided = Boolean(movement.voidedAt)
+          const canVoid = Boolean(onVoid) && !voided
+
+          return (
+            <li
+              key={entry.id}
+              className="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1 py-3.5 first:pt-1"
+            >
               <span
-                className={`text-sm font-semibold tabular-nums ${
-                  movement.voidedAt ? 'text-gray-500 line-through' : 'text-gray-950'
+                className={`flex h-8 w-8 items-center justify-center ${
+                  voided
+                    ? 'bg-gray-100 text-gray-500'
+                    : sign > 0
+                      ? 'bg-emerald-50 text-emerald-900'
+                      : 'bg-gray-100 text-gray-800'
+                }`}
+                aria-hidden="true"
+              >
+                <Icon className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1 basis-40">
+                <p
+                  className={`[overflow-wrap:anywhere] text-sm font-medium ${voided ? 'text-gray-500' : 'text-gray-900'}`}
+                >
+                  {movement.description}
+                </p>
+                <p className="mt-0.5 [overflow-wrap:anywhere] text-xs leading-5 text-gray-600">
+                  {showLabel ? `${label} · ` : ''}
+                  {formatCashMoment(movement.createdAt)}
+                  {movement.createdByName ? ` · ${movement.createdByName}` : ''}
+                  {canVoid && confirmingMovementId !== movement.id && (
+                    <>
+                      {' · '}
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => setConfirmingMovementId(movement.id)}
+                        className="-my-2.5 inline-flex min-h-9 items-center gap-1 px-1.5 -mx-1.5 align-middle font-medium text-gray-700 underline underline-offset-4 hover:text-rose-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) disabled:opacity-60"
+                        aria-label={`Anular ${label.toLowerCase()} de ${formatCashAmount(movement.amount)}: ${movement.description}`}
+                      >
+                        <Ban className="h-3 w-3" aria-hidden="true" />
+                        Anular
+                      </button>
+                    </>
+                  )}
+                </p>
+                {voided && movement.voidedAt && (
+                  <p className="mt-0.5 text-xs font-medium text-rose-800">
+                    Anulado · {formatCashMoment(movement.voidedAt)}
+                  </p>
+                )}
+                {movement.note && (
+                  <p className="mt-1 [overflow-wrap:anywhere] text-xs leading-5 text-gray-600">
+                    {movement.note}
+                  </p>
+                )}
+                {canVoid && confirmingMovementId === movement.id && (
+                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                    <p className="w-full text-xs leading-5 text-gray-700">
+                      Se excluirá del efectivo esperado y quedará marcado en el historial.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={async () => {
+                        if (onVoid && (await onVoid(movement.id))) setConfirmingMovementId(null)
+                      }}
+                      className="inline-flex min-h-11 items-center gap-2 border border-rose-300 px-3 text-xs font-semibold text-rose-900 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-800 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                    >
+                      {voidingMovementId === movement.id && (
+                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      )}
+                      Confirmar anulación
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() => setConfirmingMovementId(null)}
+                      className="min-h-11 px-2 text-xs font-medium text-gray-700 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink)"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+              <span
+                className={`ml-auto pl-2 text-right text-sm font-semibold tabular-nums ${
+                  voided ? 'text-gray-500 line-through' : 'text-gray-950'
                 }`}
               >
                 {sign > 0 ? '+' : '−'}
                 {formatCashAmount(movement.amount)}
               </span>
-              {onVoid && !movement.voidedAt && confirmingMovementId !== movement.id && (
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => setConfirmingMovementId(movement.id)}
-                  className="inline-flex min-h-9 items-center gap-1.5 px-2 text-xs font-medium text-gray-700 underline underline-offset-4 hover:text-rose-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink)"
-                  aria-label={`Anular ${MOVEMENT_LABELS[movement.type].toLowerCase()} de ${formatCashAmount(movement.amount)}: ${movement.description}`}
-                >
-                  <Ban className="h-3.5 w-3.5" aria-hidden="true" />
-                  Anular
-                </button>
-              )}
-            </div>
-          </li>
-        )
-      })}
-    </ul>
+            </li>
+          )
+        })}
+      </ul>
+      {entries.length > limit && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          className="mt-2 min-h-11 w-full border-t border-gray-200 pt-2 text-sm font-medium text-gray-800 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink)"
+        >
+          {expanded ? 'Ver menos' : `Ver ${hidden} más`}
+        </button>
+      )}
+    </>
   )
 }
 
@@ -583,17 +656,18 @@ function HistoryList({ sessions }: { sessions: CashRegisterSession[] }) {
     <div className="divide-y divide-gray-200 border-y border-gray-200">
       {sessions.map((session) => {
         const difference = session.difference ?? 0
+        const feed = buildCashFeed(session.movements, session.expenses ?? [])
         return (
           <details key={session.id} className="group min-w-0 py-4">
             <summary className="grid min-w-0 cursor-pointer list-none gap-3 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--clr-ink) sm:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))] sm:items-center">
               <span className="min-w-0">
-                <span className="block break-words-word text-sm font-semibold text-gray-900">
-                  {formatCashDate(session.openedAt)}
+                <span className="block [overflow-wrap:anywhere] text-sm font-semibold text-gray-900">
+                  {formatCashMoment(session.openedAt)}
                 </span>
-                <span className="mt-1 block break-words-word text-xs text-gray-600">
+                <span className="mt-1 block [overflow-wrap:anywhere] text-xs text-gray-600">
                   Abrió: {session.openedByName || 'Sin nombre'} · Cerró:{' '}
                   {session.closedByName || 'Sin nombre'} ·{' '}
-                  {session.closedAt ? formatCashDate(session.closedAt) : 'Abierta'}
+                  {session.closedAt ? formatCashMoment(session.closedAt) : 'Abierta'}
                 </span>
               </span>
               <span className="flex min-w-0 justify-between gap-2 text-sm sm:block">
@@ -610,9 +684,14 @@ function HistoryList({ sessions }: { sessions: CashRegisterSession[] }) {
               </span>
               <span className="flex min-w-0 justify-between gap-2 text-sm sm:block">
                 <span className="text-gray-600 sm:block sm:text-xs">Diferencia</span>
-                <span className={`font-semibold tabular-nums ${differenceTone(difference)}`}>
+                <span
+                  className={`min-w-0 text-right [overflow-wrap:anywhere] font-semibold tabular-nums sm:text-left ${differenceTone(difference)}`}
+                >
                   {difference > 0 ? '+' : ''}
                   {formatCashAmount(difference)}
+                  <span className="ml-2 text-xs font-medium">
+                    {amountDifferenceLabel(difference)}
+                  </span>
                 </span>
               </span>
             </summary>
@@ -632,19 +711,19 @@ function HistoryList({ sessions }: { sessions: CashRegisterSession[] }) {
                   ))}
                 </ul>
                 {session.differenceReason && (
-                  <p className="mt-4 break-words-word text-sm leading-6 text-gray-700">
+                  <p className="mt-4 [overflow-wrap:anywhere] text-sm leading-6 text-gray-700">
                     <span className="font-medium">Motivo de diferencia:</span>{' '}
                     {session.differenceReason}
                   </p>
                 )}
                 {session.openingNote && (
-                  <p className="mt-2 break-words-word text-sm leading-6 text-gray-700">
+                  <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-6 text-gray-700">
                     <span className="font-medium">Observación de apertura:</span>{' '}
                     {session.openingNote}
                   </p>
                 )}
                 {session.closingNote && (
-                  <p className="mt-2 break-words-word text-sm leading-6 text-gray-700">
+                  <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-6 text-gray-700">
                     <span className="font-medium">Observación:</span> {session.closingNote}
                   </p>
                 )}
@@ -678,10 +757,12 @@ function HistoryList({ sessions }: { sessions: CashRegisterSession[] }) {
                   </div>
                 </dl>
               </div>
-              {session.movements.length > 0 && (
+              {feed.length > 0 && (
                 <div className="min-w-0 border-t border-gray-100 pt-4 md:col-span-2">
-                  <p className="mb-3 text-sm font-semibold text-gray-800">Movimientos de caja</p>
-                  <MovementList movements={session.movements} />
+                  <p className="mb-3 text-sm font-semibold text-gray-800">
+                    Movimientos y gastos de caja
+                  </p>
+                  <CashFeed entries={feed} limit={8} emptyMessage="" />
                 </div>
               )}
             </div>
@@ -718,6 +799,7 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
   const [closedByName, setClosedByName] = useState('')
   const [differenceReason, setDifferenceReason] = useState('')
   const [closingNote, setClosingNote] = useState('')
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null)
 
   const loadData = useCallback(
     async (quiet = false) => {
@@ -743,6 +825,7 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
           throw new Error(readErrorMessage(result))
         }
         setData(result.data as CashRegisterData)
+        setUpdatedAt(new Date().toISOString())
         setError(null)
       } catch (loadError) {
         setError(friendlyErrorMessage(loadError))
@@ -905,9 +988,56 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
     }
   }
 
-  const lastUpdated = useMemo(
-    () => (isRefreshing ? 'Actualizando…' : 'Actualización automática cada 30 segundos'),
-    [isRefreshing],
+  useEffect(() => {
+    if (!success) return
+    const timer = window.setTimeout(() => setSuccess(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [success])
+
+  const lastUpdated = isRefreshing
+    ? 'Actualizando…'
+    : updatedAt
+      ? `Actualizado ${formatCashTime(updatedAt)}`
+      : ''
+
+  const feed = useMemo(
+    () => buildCashFeed(active?.movements ?? [], active?.expenses ?? []),
+    [active],
+  )
+
+  const actionButtons = (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setShowMovementForm((value) => !value)
+          setShowCloseForm(false)
+          setError(null)
+        }}
+        aria-expanded={showMovementForm}
+        aria-controls={showMovementForm ? 'cash-movement-form' : undefined}
+        className="inline-flex min-h-11 items-center justify-center gap-2 border border-gray-300 px-4 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) active:scale-[0.98]"
+      >
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        Movimiento
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setShowCloseForm((value) => !value)
+          setShowMovementForm(false)
+          setCashCounted('')
+          setError(null)
+        }}
+        aria-expanded={showCloseForm}
+        aria-controls={showCloseForm ? 'cash-close-form' : undefined}
+        disabled={!summary}
+        className="inline-flex min-h-11 items-center justify-center gap-2 bg-(--clr-ink) px-4 text-sm font-semibold text-white transition-colors hover:bg-(--clr-ink-dark) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <Banknote className="h-4 w-4" aria-hidden="true" />
+        Cerrar caja
+      </button>
+    </>
   )
 
   if (isLoading) return <LoadingView />
@@ -918,7 +1048,7 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-[-0.02em] text-gray-950">Caja</h1>
-            <p className="mt-1 break-words-word text-sm text-gray-600">Sucursal: {slug}</p>
+            <p className="mt-1 [overflow-wrap:anywhere] text-sm text-gray-600">Sucursal: {slug}</p>
           </div>
           <button
             type="button"
@@ -946,17 +1076,19 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
           <h1 className="text-2xl font-semibold tracking-[-0.02em] text-gray-950 sm:text-3xl">
             Caja
           </h1>
-          <p className="mt-1 break-words-word text-sm leading-6 text-gray-600">Sucursal: {slug}</p>
+          <p className="mt-1 [overflow-wrap:anywhere] text-sm leading-6 text-gray-600">
+            Sucursal: {slug}
+          </p>
         </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2">
           <span
-            className="inline-flex min-h-9 items-center gap-2 text-xs text-gray-600"
+            className="inline-flex items-center gap-1.5 text-xs tabular-nums text-gray-600"
             aria-live="polite"
           >
             {isRefreshing ? (
-              <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
             ) : (
-              <Clock3 className="h-4 w-4" aria-hidden="true" />
+              <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
             )}
             {lastUpdated}
           </span>
@@ -964,13 +1096,14 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
             type="button"
             onClick={() => void loadData(true)}
             disabled={isRefreshing || busy}
-            className="inline-flex min-h-11 items-center gap-2 border border-gray-300 px-3 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Actualizar"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 border border-gray-300 px-3 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw
               className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
               aria-hidden="true"
             />
-            Actualizar
+            <span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
       </header>
@@ -1005,68 +1138,27 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
                   En curso
                 </span>
               </div>
-              <p className="mt-1 break-words-word text-sm leading-6 text-gray-600">
+              <p className="mt-1 [overflow-wrap:anywhere] text-sm leading-6 text-gray-600">
                 Desde {formatCashDate(active.openedAt)}
                 {active.openedByName ? ` · ${active.openedByName}` : ''}
               </p>
               {active.openingNote && (
-                <p className="mt-1 break-words-word text-sm leading-6 text-gray-600">
+                <p className="mt-1 [overflow-wrap:anywhere] text-sm leading-6 text-gray-600">
                   {active.openingNote}
                 </p>
               )}
             </div>
-            <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMovementForm((value) => !value)
-                  setShowCloseForm(false)
-                  setError(null)
-                }}
-                aria-expanded={showMovementForm}
-                aria-controls={showMovementForm ? 'cash-movement-form' : undefined}
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 border border-gray-300 px-4 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) active:scale-[0.98] sm:flex-none"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Movimiento
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCloseForm((value) => !value)
-                  setShowMovementForm(false)
-                  setCashCounted('')
-                  setError(null)
-                }}
-                aria-expanded={showCloseForm}
-                aria-controls={showCloseForm ? 'cash-close-form' : undefined}
-                disabled={!summary}
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 bg-(--clr-ink) px-4 text-sm font-semibold text-white transition-colors hover:bg-(--clr-ink-dark) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--clr-ink) active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
-              >
-                <Banknote className="h-4 w-4" aria-hidden="true" />
-                Cerrar caja
-              </button>
-            </div>
+            <div className="hidden gap-2 sm:flex">{actionButtons}</div>
           </div>
 
           {summary ? (
             <>
-              <SummaryPanel summary={summary} openingAmount={active.openingAmount} />
-              <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-                <section className="min-w-0 border border-gray-200 bg-white p-5 sm:p-6">
-                  <SectionTitle
-                    icon={<History className="h-5 w-5" />}
-                    title="Movimientos recientes"
-                    detail="El fondo de apertura no cuenta como venta."
-                  />
-                  <MovementList
-                    movements={active.movements}
-                    onVoid={voidMovement}
-                    voidingMovementId={voidingMovementId}
-                    isBusy={busy}
-                  />
-                </section>
-                <div className="min-w-0 space-y-5">
+              <CashHero summary={summary} openingAmount={active.openingAmount} />
+              <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+                <div className="order-2 min-w-0 lg:order-1">
+                  <PaymentsCard summary={summary} />
+                </div>
+                <div className="order-1 min-w-0 space-y-5 lg:order-2">
                   {showMovementForm && (
                     <form
                       ref={movementFormRef}
@@ -1183,7 +1275,7 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
                             <p className="text-sm font-semibold">
                               {amountDifferenceLabel(previewDifference)}
                             </p>
-                            <p className="mt-1 break-words-word text-lg font-semibold tabular-nums">
+                            <p className="mt-1 [overflow-wrap:anywhere] text-lg font-semibold tabular-nums">
                               {previewDifference > 0 ? '+' : ''}
                               {formatCashAmount(previewDifference)}
                             </p>
@@ -1241,6 +1333,23 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
                       </div>
                     </form>
                   )}
+                  <section
+                    aria-labelledby="cash-feed-heading"
+                    className="min-w-0 border border-gray-200 bg-white p-5 sm:p-6"
+                  >
+                    <SectionTitle
+                      icon={<History className="h-5 w-5" />}
+                      title="Movimientos recientes"
+                      detail="Incluye los gastos pagados desde caja. El fondo de apertura no cuenta como venta."
+                    />
+                    <CashFeed
+                      entries={feed}
+                      onVoid={voidMovement}
+                      voidingMovementId={voidingMovementId}
+                      isBusy={busy}
+                      emptyMessage="Todavía no hay movimientos ni gastos de caja en este turno. Las ventas en efectivo ya están incluidas en el resumen."
+                    />
+                  </section>
                 </div>
               </div>
             </>
@@ -1350,6 +1459,12 @@ export default function CashRegisterView({ slug }: { slug: string; isOwner: bool
         </div>
         <HistoryList sessions={data.history} />
       </section>
+
+      {active && summary && (
+        <div className="sticky bottom-0 z-20 -mx-5 -mb-7 flex gap-2 border-t border-gray-200 bg-white/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur sm:hidden [&>button]:flex-1">
+          {actionButtons}
+        </div>
+      )}
 
       <dialog
         ref={closeConfirmationRef}

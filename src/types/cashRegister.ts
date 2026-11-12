@@ -35,6 +35,14 @@ export interface CashRegisterMovement {
   voidedAt: string | null
 }
 
+export interface CashRegisterExpense {
+  id: string
+  description: string
+  amount: number
+  category: string
+  createdAt: string
+}
+
 export interface CashRegisterSession {
   id: string
   openedAt: string
@@ -50,6 +58,7 @@ export interface CashRegisterSession {
   closingNote: string | null
   summary: CashRegisterSummary | null
   movements: CashRegisterMovement[]
+  expenses: CashRegisterExpense[]
 }
 
 export interface CashRegisterData {
